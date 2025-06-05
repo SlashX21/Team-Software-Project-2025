@@ -12,8 +12,30 @@ By combining computer vision, NLP, and cloud-based processing, this project aims
 
 #### Project Plan
 
-
+| Week          | Activity                 | Deliverables |
+| ------------- | ------------------------ | ------------:|
+| 2nd of June   | Project Plan             | $1600        |
+| 9th of June   | Core Modules Development |   $12        |
+| 16th of June  | Testing and Deployment   |    $1        |
+| 23rd of June  | Interim Presentation     | $1600        |
+| 30th of June  | centered                 |   $12        |
+| 7nd of July   | are neat                 |    $1        |
+| 4nd of July   | right-aligned            | $1600        |
+| 21nd of July  | centered                 |   $12        |
+| 28th of July  | are neat                 |    $1        |
+| 4th of Aug    | are neat                 |    $1        |
+| 11th of Aug   | are neat                 |    $1        |
+| 19th of Aug   | are neat                 |    $1        |
+| 4th of Aug    | are neat                 |    $1        |
 
 #### Project Roles
 
-*Scrum Master*
+*Scrum Master*: 
+* Clarence Chong Yu Zhan
+
+*Team*: 
+* YanHao Sun
+* PeiZheng Tang
+* XiLiang Liu
+* Xiang Li
+
