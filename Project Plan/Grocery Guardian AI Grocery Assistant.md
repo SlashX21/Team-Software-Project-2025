@@ -12,21 +12,20 @@ By combining computer vision, NLP, and cloud-based processing, this project aims
 
 #### Project Plan
 
-| Week          | Activity                 | Deliverables |
-| ------------- | ------------------------ | ------------:|
-| 2nd of June   | Project Plan             | $1600        |
-| 9th of June   | Core Modules Development |   $12        |
-| 16th of June  | Testing and Deployment   |    $1        |
-| 23rd of June  | Interim Presentation     | $1600        |
-| 30th of June  | centered                 |   $12        |
-| 7nd of July   | are neat                 |    $1        |
-| 4nd of July   | right-aligned            | $1600        |
-| 21nd of July  | centered                 |   $12        |
-| 28th of July  | are neat                 |    $1        |
-| 4th of Aug    | are neat                 |    $1        |
-| 11th of Aug   | are neat                 |    $1        |
-| 19th of Aug   | are neat                 |    $1        |
-| 4th of Aug    | are neat                 |    $1        |
+| Week          | Activity                       | Deliverables   |
+| ------------- | -------------------------------| --------------:|
+| 2nd of June   | Project Plan                   | Project Plan   |
+| 9th of June   | Core Modules Development       | 1st Prototype  |
+| 16th of June  | Testing and Deployment         | 2nd Prototype  |
+| 23rd of June  | Interim Presentation           | Slides         |
+| 30th of June  | Update and changes             | 3rd version    |
+| 7nd of July   | Update and Improvements        | 4th version    |
+| 14nd of July  | Optional Module Implementation | 5th version    |
+| 21nd of July  | Testing and Finalisation       | Final Version  |
+| 28th of July  | Final Presentation Preparation | Slides         |
+| 4th of Aug    | Changes and Report on Feedback | Report draft   |
+| 11th of Aug   | Finalise of Report             | Finalise Report|
+| 19th of Aug   | Submission                     | -              |
 
 #### Project Roles
 
