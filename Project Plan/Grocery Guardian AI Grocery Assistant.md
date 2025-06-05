@@ -10,6 +10,7 @@ Technically, the system will use Azure’s Computer Vision API for barcode and r
 
 By combining computer vision, NLP, and cloud-based processing, this project aims to support safer and more informed shopping for people with allergies or specific dietary needs.
 
+
 #### Project Plan
 
 | Week          | Activity                       | Deliverables   |
@@ -37,4 +38,3 @@ By combining computer vision, NLP, and cloud-based processing, this project aims
 * PeiZheng Tang
 * XiLiang Liu
 * Xiang Li
-
