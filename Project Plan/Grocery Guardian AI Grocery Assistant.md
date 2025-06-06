@@ -34,7 +34,9 @@ By combining computer vision, NLP, and cloud-based processing, this project aims
 * Clarence Chong Yu Zhan
 
 *Team*: 
-* YanHao Sun
-* PeiZheng Tang
-* XiLiang Liu
-* Xiang Li
+* YanHao Sun - Backend API developer
+* PeiZheng Tang - Database maintenance
+* XiLiang Liu - Machine Learning
+* Xiang Li - 
+
+In our team, Clarence oversees and supports all sections of the project, collaborating with each team member and maintaining communication with various stakeholders. YanHao Sun is responsible for backend API development, with assistance from Clarence. Meanwhile, PeiZheng Tang focuses on populating, managing, and maintaining the project database. Xiang Li leads the machine learning component, including algorithm selection, training, and deployment, also with support from Clarence. Finally, XiLiang Liu will be working on
