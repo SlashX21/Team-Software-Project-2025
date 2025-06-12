@@ -31,7 +31,7 @@ public class UserController {
 
     // 查询
     @GetMapping("/{userId}") // URL: localhost:8088/user/1 method: get
-    public ResponseMessage get(@PathVariable Integer userId){
+    public ResponseMessage<User> get(@PathVariable Integer userId){
         User userNew = userService.getUser(userId);
         return ResponseMessage.success(userNew);
     }
@@ -46,7 +46,7 @@ public class UserController {
     // 删除
     // delete mapping
     @DeleteMapping("/{userId}") // URL: localhost:8088/user/1 method: get
-    public ResponseMessage delete(@PathVariable Integer userId){
+    public ResponseMessage<User> delete(@PathVariable Integer userId){
         userService.delete(userId);
         return ResponseMessage.success();
     }

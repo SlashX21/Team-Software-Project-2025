@@ -8,7 +8,7 @@
         <version>3.3.12</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>MicroHard-2025</groupId>
+    <groupId>MicroHard_2025</groupId>
     <artifactId>springboot_backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>springboot_demo</name>
