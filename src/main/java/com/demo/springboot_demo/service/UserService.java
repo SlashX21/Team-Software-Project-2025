@@ -1,16 +1,14 @@
 package com.demo.springboot_demo.service;
 
-import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
 import com.demo.springboot_demo.pojo.DTO.UserDto;
 import com.demo.springboot_demo.pojo.User;
 import com.demo.springboot_demo.repository.UserRepository;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
+
 
 @Service
 public class UserService implements IUserService{
