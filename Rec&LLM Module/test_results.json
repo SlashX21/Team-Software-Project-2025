@@ -1,0 +1,23 @@
+{
+  "test_suite": "Grocery Guardian Basic Tests",
+  "timestamp": "2025-06-13T01:17:23.004691",
+  "results": {
+    "database_connection": {
+      "status": "success",
+      "product_found": true,
+      "user_found": true
+    },
+    "barcode_recommendation": {
+      "status": "success",
+      "recommendations_count": 0,
+      "processing_time_ms": 18181,
+      "llm_analysis_available": true
+    },
+    "receipt_analysis": {
+      "status": "success",
+      "items_analyzed": 2,
+      "processing_time_ms": 16485,
+      "nutrition_analysis_available": true
+    }
+  }
+}
