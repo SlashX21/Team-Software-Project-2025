@@ -58,3 +58,6 @@ logs/
 *.zip
 *.tar.gz
 *.rar 
+
+# env file in ocr module 
+*.env
