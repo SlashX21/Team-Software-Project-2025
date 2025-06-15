@@ -21,6 +21,13 @@
   </properties>
 
   <dependencies>
+    <!-- 添加对common模块的依赖 -->
+    <dependency>
+      <groupId>MicroHard_2025</groupId>
+      <artifactId>common</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+    
     <!-- 继承父项目的依赖，这里可以添加模块特有的依赖 -->
     <dependency>
       <groupId>junit</groupId>
@@ -29,4 +36,20 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- 禁用Spring Boot插件的repackage目标，因为这是一个库模块 -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>repackage</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

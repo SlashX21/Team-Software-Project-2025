@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@Table(name = "tb_product")
+@Table(name = "product")
 @Entity
 public class Product {
     // @Id
@@ -18,7 +18,7 @@ public class Product {
     @Column(name="bar_code")
     private String barCode;
     // "商品名称, OCR匹配用"
-    @Column(name="productName")
+    @Column(name="product_name")
     private String productName;
     // "品牌"
     @Column(name="brand")
@@ -51,7 +51,7 @@ public class Product {
     @Column(name="proteins_100g")
     private Float proteins100g;
     // "建议食用份量"
-    @Column(name="servingSize")
+    @Column(name="serving_size")
     private String servingSize;
 
     // "商品类别，同类推荐关键"
@@ -68,7 +68,7 @@ public class Product {
     
 
     /**
-     * @return Character return the barCode
+     * @return String return the barCode
      */
     public String getBarCode() {
         return barCode;
@@ -82,21 +82,21 @@ public class Product {
     }
 
     /**
-     * @return Character return the name
+     * @return String return the productName
      */
-    public String getName() {
+    public String getProductName() {
         return productName;
     }
 
     /**
-     * @param name the name to set
+     * @param productName the productName to set
      */
-    public void setName(String name) {
-        this.productName = name;
+    public void setProductName(String productName) {
+        this.productName = productName;
     }
 
     /**
-     * @return Character return the brand
+     * @return String return the brand
      */
     public String getBrand() {
         return brand;

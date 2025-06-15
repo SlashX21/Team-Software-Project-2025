@@ -45,12 +45,17 @@ public class AllergenService implements IAllergenService {
     @Override
     @Transactional
     public Allergen update(AllergenDto allergenDto) {
-        if (!allergenRepository.existsById(allergenDto.getId())) {
-            throw new ResourceNotFoundException("Allergen not found with id: " + allergenDto.getId());
-        }
-        Allergen allergenPojo = new Allergen();
-        BeanUtils.copyProperties(allergenDto, allergenPojo);
-        return allergenRepository.save(allergenPojo);
+        Allergen existingAllergen = allergenRepository.findById(allergenDto.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("Allergen not found with id: " + allergenDto.getId()));
+
+
+        BeanUtils.copyProperties(allergenDto, existingAllergen, "createdAt");
+        // if (!allergenRepository.existsById(allergenDto.getId())) {
+        //     throw new ResourceNotFoundException("Allergen not found with id: " + allergenDto.getId());
+        // }
+        // Allergen allergenPojo = new Allergen();
+        // BeanUtils.copyProperties(allergenDto, allergenPojo);
+        return allergenRepository.save(existingAllergen);
     }
 
     // delete allergen

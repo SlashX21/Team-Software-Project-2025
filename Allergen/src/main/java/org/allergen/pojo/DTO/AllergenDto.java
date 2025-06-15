@@ -9,13 +9,13 @@ public class AllergenDto {
     @NotBlank(message = "过敏原名称不能为空")
     private String name;
 
-    @NotBlank(message = "过敏原分类不能为空")
+    // @NotBlank(message = "过敏原分类不能为空")
     private String category;
 
-    @NotNull(message = "是否为常见过敏原不能为空")
+    // @NotNull(message = "是否为常见过敏原不能为空")
     private boolean isCommon;
 
-    @NotBlank(message = "过敏原描述不能为空")
+    // @NotBlank(message = "过敏原描述不能为空")
     private String description;
 
     private String createdTime;

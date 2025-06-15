@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 
-@Table(name = "tb_user")
+@Table(name = "user")
 @Entity
 public class User {
     @Id

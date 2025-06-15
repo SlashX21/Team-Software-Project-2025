@@ -26,37 +26,37 @@
                 <constraints nullable="false"/>
             </column>
             <column name="age" type="${type.int}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="gender" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="height_cm" type="${type.int}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="weight_kg" type="${type.float}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="activity_level" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="nutrition_goal" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="daily_calories_target" type="${type.float}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="daily_protein_target" type="${type.float}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="daily_carb_target" type="${type.float}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="daily_fat_target" type="${type.float}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="created_time" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
         </createTable>
     </changeSet>

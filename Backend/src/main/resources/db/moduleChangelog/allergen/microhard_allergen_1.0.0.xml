@@ -20,16 +20,16 @@
                 <constraints nullable="false"/>
             </column>
             <column name="category" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="is_common" type="${type.boolean}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="description" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="created_time" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
         </createTable>
     </changeSet>
