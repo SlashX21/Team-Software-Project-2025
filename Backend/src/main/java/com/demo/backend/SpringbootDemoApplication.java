@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
     "com.demo.backend", 
-    "org.user", "org.product", "org.allergen"
+    "org.user", "org.product", "org.allergen", "org.ocr"
 })
 @EnableJpaRepositories(basePackages = {
     "com.demo.backend", 

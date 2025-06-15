@@ -38,6 +38,7 @@
         <module>User</module>
         <module>Product</module>
         <module>Allergen</module>
+        <module>Ocr</module>
     </modules>
     
     <dependencyManagement>
@@ -60,6 +61,11 @@
             <dependency>
                 <groupId>MicroHard_2025</groupId>
                 <artifactId>Allergen</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>MicroHard_2025</groupId>
+                <artifactId>Ocr</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
@@ -107,7 +113,7 @@
             <artifactId>spring-boot-maven-plugin</artifactId>
             <version>3.3.12</version>
             <configuration>
-              <mainClass>com.demo.backend.BackendApplication</mainClass>
+              <mainClass>com.demo.backend.SpringbootDemoApplication</mainClass>
             </configuration>
           </plugin>
         </plugins>

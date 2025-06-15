@@ -30,22 +30,18 @@
     <dependency>
         <groupId>MicroHard_2025</groupId>
         <artifactId>common</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
     </dependency> 
     <dependency>
         <groupId>MicroHard_2025</groupId>
         <artifactId>User</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
         <groupId>MicroHard_2025</groupId>
         <artifactId>Product</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>MicroHard_2025</groupId>
       <artifactId>Allergen</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
