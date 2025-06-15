@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 import org.user.enums.Gender;
+import org.user.enums.ActivityLevel;
+import org.user.enums.NutritionGoal;
 
 
 public class UserDto {
@@ -22,14 +24,28 @@ public class UserDto {
     @Email(message = "邮箱格式不正确")
     private String email;
     
-    @NotNull(message = "性别不能为空")
+    // @NotNull(message = "年龄不能为空")
+    private Integer age;
+    
+    // @NotNull(message = "性别不能为空")   
     private Gender gender;
 
-    @NotNull(message = "身高不能为空")
+    // @NotNull(message = "身高不能为空")
     private Integer heightCm;
 
-    @NotNull(message = "体重不能为空")
+    // @NotNull(message = "体重不能为空")
     private Float weightKg;
+
+    // @NotNull(message = "活动水平不能为空")
+    private ActivityLevel activityLevel;
+
+    // @NotNull(message = "营养目标不能为空")
+    private NutritionGoal nutritionGoal;
+
+    private Float dailyCaloriesTarget;
+    private Float dailyProteinTarget;
+    private Float dailyCarbTarget;
+    private Float dailyFatTarget;
 
     private String createdTime;
     
@@ -40,6 +56,12 @@ public class UserDto {
                 "username='" + userName + '\'' +
                 ", password='" + passwordHash + '\'' +
                 ", email='" + email + '\'' +
+                ", age=" + age +
+                ", gender=" + gender +
+                ", heightCm=" + heightCm +
+                ", weightKg=" + weightKg +
+                ", activityLevel=" + activityLevel +
+                ", nutritionGoal=" + nutritionGoal +
                 ", createdTime='" + createdTime + '\'' +
                 '}';
     }
@@ -83,47 +105,83 @@ public class UserDto {
         this.createdTime = createdTime;
     }
 
+    public Integer getAge() {
+        return age;
+    }
 
-    /**
-     * @return Gender return the gender
-     */
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
     public Gender getGender() {
         return gender;
     }
 
-    /**
-     * @param gender the gender to set
-     */
     public void setGender(Gender gender) {
         this.gender = gender;
     }
 
-    /**
-     * @return Float return the heightCm
-     */
     public Integer getHeightCm() {
         return heightCm;
     }
 
-    /**
-     * @param heightCm the heightCm to set
-     */
     public void setHeightCm(Integer heightCm) {
         this.heightCm = heightCm;
     }
 
-    /**
-     * @return Float return the weightKg
-     */
     public Float getWeightKg() {
         return weightKg;
     }
 
-    /**
-     * @param weightKg the weightKg to set
-     */
     public void setWeightKg(Float weightKg) {
         this.weightKg = weightKg;
     }
 
+    public ActivityLevel getActivityLevel() {
+        return activityLevel;
+    }
+
+    public void setActivityLevel(ActivityLevel activityLevel) {
+        this.activityLevel = activityLevel;
+    }
+
+    public NutritionGoal getNutritionGoal() {
+        return nutritionGoal;
+    }
+
+    public void setNutritionGoal(NutritionGoal nutritionGoal) {
+        this.nutritionGoal = nutritionGoal;
+    }
+
+    public Float getDailyCaloriesTarget() {
+        return dailyCaloriesTarget;
+    }
+
+    public void setDailyCaloriesTarget(Float dailyCaloriesTarget) {
+        this.dailyCaloriesTarget = dailyCaloriesTarget;
+    }
+
+    public Float getDailyProteinTarget() {
+        return dailyProteinTarget;
+    }
+
+    public void setDailyProteinTarget(Float dailyProteinTarget) {
+        this.dailyProteinTarget = dailyProteinTarget;
+    }
+
+    public Float getDailyCarbTarget() {
+        return dailyCarbTarget;
+    }
+
+    public void setDailyCarbTarget(Float dailyCarbTarget) {
+        this.dailyCarbTarget = dailyCarbTarget;
+    }
+
+    public Float getDailyFatTarget() {
+        return dailyFatTarget;
+    }
+
+    public void setDailyFatTarget(Float dailyFatTarget) {
+        this.dailyFatTarget = dailyFatTarget;
+    }
 }

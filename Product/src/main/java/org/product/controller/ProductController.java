@@ -24,6 +24,8 @@ public class ProductController {
     // add new product
     @PostMapping // URL: localhost:8088/product method: post
     public ResponseMessage<Product> add(@Validated @RequestBody ProductDto product){
+        // System.out.println("ProductController.add() called");
+        // System.out.println("Received ProductDto: " + product.toString());
         Product productNew = productService.add(product);
         return ResponseMessage.success(productNew);
     }

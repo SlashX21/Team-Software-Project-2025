@@ -1,4 +1,4 @@
-package com.demo.springboot_demo.spring.liquibase;
+package com.demo.backend;
 
 import javax.sql.DataSource;
 

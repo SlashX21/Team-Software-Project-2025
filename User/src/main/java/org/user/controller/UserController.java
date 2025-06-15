@@ -6,7 +6,7 @@ package org.user.controller;
 // import com.demo.springboot_demo.service.IUserService;
 
 
-import org.user.pojo.DTO.ResponseMessage;
+import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
 import org.user.pojo.DTO.UserDto;
 import org.user.pojo.User;
 

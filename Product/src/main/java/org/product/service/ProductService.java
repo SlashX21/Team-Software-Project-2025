@@ -18,8 +18,30 @@ public class ProductService implements IProductService{
 
     @Override
     public Product add(ProductDto product){
+        // System.out.println("Received ProductDto: " + product.toString());
+        // System.out.println("ProductDto.getProductName(): " + product.getProductName());
+        
         Product productDto = new Product();
-        BeanUtils.copyProperties(product, productDto);
+        
+        // 手动设置字段而不是使用BeanUtils.copyProperties
+        // productDto.setBarCode(product.getBarCode());
+        // productDto.setProductName(product.getProductName());
+        // productDto.setBrand(product.getBrand());
+        // productDto.setIngredients(product.getIngredients());
+        // productDto.setAllergens(product.getAllergens());
+        // productDto.setEnergy100g(product.getEnergy100g());
+        // productDto.setEnergyKcal100g(product.getEnergyKcal100g());
+        // productDto.setFat100g(product.getFat100g());
+        // productDto.setSaturatedFat100g(product.getSaturatedFat100g());
+        // productDto.setCarbohydrates100g(product.getCarbohydrates100g());
+        // productDto.setSugars100g(product.getSugars100g());
+        // productDto.setProteins100g(product.getProteins100g());
+        // productDto.setServingSize(product.getServingSize());
+        // productDto.setCategory(product.getCategory());
+        
+        // System.out.println("After manual setting:");
+        // System.out.println("Product.getProductName(): " + productDto.getProductName());
+        // System.out.println("Product.getBarCode(): " + productDto.getBarCode());
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

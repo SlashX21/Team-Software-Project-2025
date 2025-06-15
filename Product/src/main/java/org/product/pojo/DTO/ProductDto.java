@@ -9,19 +9,19 @@ public class ProductDto {
     @NotBlank(message = "Product name cannot be empty")
     private String productName;
     
-    @NotBlank(message = "Brand cannot be empty")
+    // @NotBlank(message = "Brand cannot be empty")
     private String brand;
 
-    @NotBlank(message = "Ingredients cannot be empty")
+    // @NotBlank(message = "Ingredients cannot be empty")
     private String ingredients;
 
-    @NotBlank(message = "Allergens cannot be empty")
+    // @NotBlank(message = "Allergens cannot be empty")
     private String allergens;
 
-    @NotNull(message = "Energy cannot be empty")
+    // @NotNull(message = "Energy cannot be empty")
     private Float energy100g;
 
-    @NotNull(message = "Energy kcal cannot be empty")
+    // @NotNull(message = "Energy kcal cannot be empty")
     private Float energyKcal100g;
 
     // @NotBlank(message = "Fat cannot be empty")
