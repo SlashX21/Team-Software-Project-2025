@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 引用全局的属性文件 -->
+    <!-- 这个全局属性文件里面定义了所有子模块都遵循的规则, 比方说: 类型转换-->
+    <include file="classpath:db/moduleChangelog/user/microhard_user_1.0.0.xml"></include>
+</databaseChangeLog>
