@@ -21,8 +21,8 @@ public class ProductService implements IProductService{
         // System.out.println("Received ProductDto: " + product.toString());
         // System.out.println("ProductDto.getProductName(): " + product.getProductName());
         
-        Product productDto = new Product();
-        
+        Product productPojo = new Product();
+        BeanUtils.copyProperties(product, productPojo);
         // 手动设置字段而不是使用BeanUtils.copyProperties
         // productDto.setBarCode(product.getBarCode());
         // productDto.setProductName(product.getProductName());
@@ -45,9 +45,9 @@ public class ProductService implements IProductService{
 
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        productDto.setCreatedAt(now.format(formatter));
+        productPojo.setCreatedAt(now.format(formatter));
         
-        return productRepository.save(productDto);
+        return productRepository.save(productPojo);
     }
 
     /**
