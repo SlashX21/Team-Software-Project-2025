@@ -292,30 +292,9 @@ CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
 - **推荐质量**: 推荐分数和用户反馈
 - **系统资源**: CPU、内存使用情况
 
-## 🤝 贡献指南
-
-### 开发流程
-1. Fork项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建Pull Request
-
-### 代码规范
-- 遵循PEP 8 Python代码规范
-- 使用类型注解
-- 编写详细的文档字符串
-- 保持测试覆盖率
-
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-## 📞 支持和联系
-
-- **项目维护**: [Your Name](mailto:your.email@example.com)
-- **问题反馈**: [GitHub Issues](https://github.com/your-repo/issues)
-- **功能建议**: [GitHub Discussions](https://github.com/your-repo/discussions)
 
 ## 🙏 致谢
 
