@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 使用相对路径引用全局属性文件 -->
+    <include file="db/changelog/changelog_global_property.xml" relativeToChangelogFile="false"/>
+
+    <!-- 引用各个业务模块的changeset文件 -->
+    <include file="db/moduleChangelog/allergen/microhard_allergen_1.0.0.xml" relativeToChangelogFile="false"/>
+    <include file="db/moduleChangelog/product/microhard_product_1.0.0.xml" relativeToChangelogFile="false"/>
+    <include file="db/moduleChangelog/user/microhard_user_1.0.0.xml" relativeToChangelogFile="false"/>
+    
+    <!-- 数据迁移 -->
+    <include file="db/data/data_migration.xml" relativeToChangelogFile="false"/>
+    
+</databaseChangeLog>
