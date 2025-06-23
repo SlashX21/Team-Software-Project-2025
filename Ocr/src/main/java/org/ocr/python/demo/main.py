@@ -12,7 +12,7 @@ from ocr_module import extract_text_from_image
 from gpt_module import extract_products_from_text
 from barcode_module import extract_barcodes_from_image
 
-load_dotenv()
+load_dotenv("ocr_config.env")
 API_TOKEN = os.getenv("API_TOKEN")
 
 class BarcodeRequest(BaseModel):

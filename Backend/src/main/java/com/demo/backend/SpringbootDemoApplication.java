@@ -1,4 +1,3 @@
-
 package com.demo.backend;
 
 import org.springframework.boot.SpringApplication;
@@ -8,7 +7,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(scanBasePackages = {
     "com.demo.backend", 
-    "org.user", "org.product", "org.allergen", "org.ocr"
+    "org.user", "org.product", "org.allergen", "org.ocr", "org.recommendation"
 })
 @EnableJpaRepositories(basePackages = {
     "com.demo.backend", 
@@ -24,6 +23,7 @@ public class SpringbootDemoApplication {
     }
 }  
 =======
+
 package com.demo.backend;
 
 import org.springframework.boot.SpringApplication;

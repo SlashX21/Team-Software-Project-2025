@@ -71,9 +71,7 @@ using Computer Vision                                               food suggest
 * Clarence Chong Yu Zhan
 
 *Team*: 
-* YanHao Sun - Backend API developer
-* PeiZheng Tang - Database maintenance
-* XiLiang Liu - Machine Learning
-* Xiang Li - 
-
-In our team, Clarence oversees and supports all sections of the project, collaborating with each team member and maintaining communication with various stakeholders. YanHao Sun is responsible for backend API development, with assistance from Clarence. Meanwhile, PeiZheng Tang focuses on populating, managing, and maintaining the project database. Xiang Li leads the machine learning component, including algorithm selection, training, and deployment, recommendation system, also with support from Clarence. Finally, XiLiang Liu will be working on maintaning cloud platform, OCR and Frontend. Clarence, XiangLi and XiLiang frontend. 
+* YanHao Sun
+* PeiZheng Tang
+* XiLiang Liu
+* Xiang Li

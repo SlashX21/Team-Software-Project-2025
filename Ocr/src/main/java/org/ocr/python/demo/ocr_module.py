@@ -9,12 +9,19 @@ load_dotenv()
 AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
 AZURE_KEY = os.getenv("AZURE_KEY")
 
-client = ImageAnalysisClient(
-    endpoint=AZURE_ENDPOINT,
-    credential=AzureKeyCredential(AZURE_KEY)
-)
+# 只有在Azure配置存在时才创建客户端
+client = None
+if AZURE_ENDPOINT and AZURE_KEY:
+    client = ImageAnalysisClient(
+        endpoint=AZURE_ENDPOINT,
+        credential=AzureKeyCredential(AZURE_KEY)
+    )
 
 def extract_text_from_image(image_bytes: bytes) -> str:
+    if not client:
+        # 如果没有Azure配置，返回模拟的OCR结果
+        return "模拟OCR结果：这是一张小票图片的文本内容\n商品1: 苹果 $2.99\n商品2: 香蕉 $1.50\n总计: $4.49"
+    
     result = client.analyze(
         image_data=image_bytes,
         visual_features=[VisualFeatures.READ],
