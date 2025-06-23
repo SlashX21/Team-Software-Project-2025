@@ -43,6 +43,14 @@
       <groupId>MicroHard_2025</groupId>
       <artifactId>Allergen</artifactId>
     </dependency>
+    <dependency>
+      <groupId>MicroHard_2025</groupId>
+      <artifactId>Ocr</artifactId>
+    </dependency>
+    <dependency>
+       <groupId>MicroHard_2025</groupId>
+       <artifactId>Recommendation</artifactId>
+     </dependency>
   </dependencies>
 
   <build>
