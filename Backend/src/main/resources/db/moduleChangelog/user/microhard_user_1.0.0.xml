@@ -20,7 +20,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="email" type="${type.string}">
-                <constraints nullable="false"/>
+                <!-- <constraints nullable="false"/> -->
             </column>
             <column name="password_hash" type="${type.string}">
                 <constraints nullable="false"/>

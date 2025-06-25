@@ -21,13 +21,14 @@ public class UserDto {
     @Length(min = 6, max = 12)
     private String passwordHash;
 
+    // 只在提供了email时才验证格式，允许为空
     @Email(message = "邮箱格式不正确")
     private String email;
     
     // @NotNull(message = "年龄不能为空")
     private Integer age;
     
-    // @NotNull(message = "性别不能为空")   
+    // @NotNull(message = "性别不能为空")
     private Gender gender;
 
     // @NotNull(message = "身高不能为空")

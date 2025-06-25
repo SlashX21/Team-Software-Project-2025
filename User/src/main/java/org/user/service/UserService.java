@@ -17,6 +17,23 @@ public class UserService implements IUserService{
     @Autowired
     UserRepository userRepository;
     
+    // login user
+    @Override
+    public User logIn(UserDto user) {
+        // find user by user name and password hash
+        User foundUser = userRepository.findByUserNameAndPasswordHash(
+            user.getUserName(), 
+            user.getPasswordHash()
+        );
+        
+        if (foundUser == null) {
+            throw new IllegalArgumentException("Error: user name or password is incorrect.");
+        }
+        
+        return foundUser;
+    }
+
+    // register user
     @Override
     public User add(UserDto user) {
         User userPojo = new User();

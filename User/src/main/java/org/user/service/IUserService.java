@@ -5,7 +5,7 @@ import org.user.pojo.User;
 
 public interface IUserService {
     /**
-     * 插入用户
+     * register user
      *
      * @param user
      * @return
@@ -13,23 +13,30 @@ public interface IUserService {
     User add(UserDto user);
 
     /**
-     * 查询用户
-     * @param userId 用户Id
+     * query user
+     * @param userId user id
      * @return
      */
     User getUser(Integer userId);
 
     /**
-     * 修改用户
-     * @param user 需要修改的用户对象
+     * modify user
+     * @param user user object
      * @return
      */
     User edit(UserDto user);
 
     /**
-     * 删除用户
-     * @param userId 需要删除的用户Id
+     * delete user
+     * @param userId user id
      * @return
      */
     void delete(Integer userId);
+
+    /**
+     * login user
+     * @param user user object
+     * @return
+     */
+    User logIn(UserDto user);
 }
