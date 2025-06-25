@@ -39,6 +39,7 @@
         <module>Product</module>
         <module>Allergen</module>
         <module>Ocr</module>
+        <module>Recommendation</module>
     </modules>
     
     <dependencyManagement>
@@ -66,6 +67,11 @@
             <dependency>
                 <groupId>MicroHard_2025</groupId>
                 <artifactId>Ocr</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>MicroHard_2025</groupId>
+                <artifactId>Recommendation</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
