@@ -1,0 +1,92 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ develop, main ]
+    paths:
+      - 'frontend/**'
+      - '.env.example'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'frontend/**'
+      - '.env.example'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.pub-cache
+          frontend/g5/.dart_tool
+        key: ${{ runner.os }}-flutter-${{ hashFiles('**/pubspec.yaml') }}
+        restore-keys: ${{ runner.os }}-flutter-
+
+    - name: Create test environment file
+      run: |
+        cp .env.example .env
+        sed -i 's/your_database_password_here/testpassword/g' .env
+        sed -i 's/development/test/g' .env
+
+    - name: Get Flutter dependencies
+      run: |
+        cd frontend/g5
+        flutter pub get
+
+    - name: Verify Flutter installation
+      run: flutter doctor -v
+
+    - name: Analyze code
+      run: |
+        cd frontend/g5
+        flutter analyze --fatal-infos
+
+    - name: Check code formatting
+      run: |
+        cd frontend/g5
+        dart format --output=none --set-exit-if-changed .
+
+    - name: Run unit tests
+      run: |
+        cd frontend/g5
+        flutter test --coverage
+
+    - name: Upload coverage reports
+      if: success()
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./frontend/g5/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: false
+
+    - name: Build APK (Debug)
+      run: |
+        cd frontend/g5
+        flutter build apk --debug
+
+    - name: Build Web
+      run: |
+        cd frontend/g5
+        flutter build web --dart-define=FLUTTER_WEB_AUTO_DETECT=true
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: flutter-builds
+        path: |
+          frontend/g5/build/app/outputs/apk/debug/
+          frontend/g5/build/web/

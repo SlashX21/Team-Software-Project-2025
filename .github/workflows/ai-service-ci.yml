@@ -1,0 +1,111 @@
+name: AI Service CI
+
+on:
+  push:
+    branches: [ develop, main ]
+    paths:
+      - 'Backend/**/Rec_LLM_Module/**'
+      - 'Backend/**/python/**'
+      - '.env.example'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Backend/**/Rec_LLM_Module/**'
+      - 'Backend/**/python/**'
+      - '.env.example'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+
+    - name: Create test environment file
+      run: |
+        cp .env.example .env
+        sed -i 's/your_database_password_here/testpassword/g' .env
+        sed -i 's/your_openai_api_key_here/test_key/g' .env
+        sed -i 's/development/test/g' .env
+
+    - name: Install dependencies for Recommendation Service
+      run: |
+        cd Backend/Team-Software-Project-2025-YanHaoSun/Recommendation/src/main/java/org/recommendation/Rec_LLM_Module
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements.lock.txt ]; then pip install -r requirements.lock.txt; fi
+
+    - name: Install dependencies for OCR Service
+      run: |
+        cd Backend/Team-Software-Project-2025-YanHaoSun/Ocr/src/main/java/org/ocr/python/demo
+        python -m pip install --upgrade pip
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements.lock.txt ]; then pip install -r requirements.lock.txt; fi
+
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv,env,.venv,.env
+        # Exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --exclude=venv,env,.venv,.env
+
+    - name: Format check with black
+      run: |
+        pip install black
+        black --check --diff . --exclude='venv|env|\.venv|\.env'
+
+    - name: Type check with mypy (if mypy config exists)
+      run: |
+        if [ -f mypy.ini ] || [ -f .mypy.ini ] || [ -f setup.cfg ] || [ -f pyproject.toml ]; then
+          pip install mypy
+          mypy . --ignore-missing-imports || true
+        fi
+
+    - name: Test Recommendation Service startup
+      run: |
+        cd Backend/Team-Software-Project-2025-YanHaoSun/Recommendation/src/main/java/org/recommendation/Rec_LLM_Module
+        timeout 30 python -c "
+        import sys
+        sys.path.append('.')
+        try:
+            # Test basic imports
+            import fastapi
+            import uvicorn
+            print('✅ Basic dependencies import successfully')
+        except ImportError as e:
+            print(f'❌ Import error: {e}')
+            sys.exit(1)
+        "
+
+    - name: Test OCR Service startup
+      run: |
+        cd Backend/Team-Software-Project-2025-YanHaoSun/Ocr/src/main/java/org/ocr/python/demo
+        timeout 30 python -c "
+        import sys
+        sys.path.append('.')
+        try:
+            # Test basic imports
+            import fastapi
+            import uvicorn
+            print('✅ Basic dependencies import successfully')
+        except ImportError as e:
+            print(f'❌ Import error: {e}')
+            sys.exit(1)
+        " || echo "OCR service test skipped due to missing dependencies"

@@ -1,0 +1,51 @@
+name: grocery_guardian_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # 状态管理
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  
+  # 网络请求
+  dio: ^5.7.0
+  retrofit: ^4.4.1
+  json_annotation: ^4.9.0
+  http: ^1.2.2
+  http_parser: ^4.1.1
+  
+  # 环境配置
+  flutter_dotenv: ^5.2.1
+  
+  # 现有依赖
+  image_picker: ^1.1.2
+  mobile_scanner: ^7.0.1
+  page_transition: ^2.2.1
+  shared_preferences: ^2.2.2
+  
+  # UI组件
+  flutter_svg: ^2.0.12
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  
+  # 代码生成
+  build_runner: ^2.4.13
+  retrofit_generator: ^8.2.1
+  json_serializable: ^6.8.0
+  
+  # 测试
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

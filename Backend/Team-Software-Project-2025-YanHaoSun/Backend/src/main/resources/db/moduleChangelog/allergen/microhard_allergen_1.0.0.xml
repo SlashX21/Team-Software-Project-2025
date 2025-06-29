@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- 创建过敏原表 -->
+    <changeSet id="allergen-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="allergen"/>
+            </not>
+        </preConditions>
+        <createTable tableName="allergen">
+            <column name="allergen_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="name" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="is_common" type="${type.boolean}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="description" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="created_time" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 以后每次数据库变更都在这里添加新的changeSet -->
+</databaseChangeLog>
