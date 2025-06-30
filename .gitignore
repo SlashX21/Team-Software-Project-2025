@@ -1,0 +1,63 @@
+# 敏感文件
+*.env
+.env
+.env.local
+.env.production
+.env.development
+
+# API密钥和敏感配置
+**/test_maven_db.env
+**/api_keys.txt
+**/secrets.json
+
+# 构建文件
+target/
+build/
+*.class
+*.jar
+*.war
+
+# IDE文件
+.idea/
+.vscode/
+*.iml
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3 
