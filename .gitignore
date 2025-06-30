@@ -1,0 +1,40 @@
+# 环境变量文件保护
+.env
+.env.local
+.env.*.local
+.env.bak
+.env.backup
+
+# 系统文件
+.DS_Store
+.DS_Store?
+._*
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 运行时文件
+*.log
+*.pid
+logs/
+temp/
+tmp/
+
+# 编译文件
+target/
+build/
+dist/
+*.class
+*.jar
+
+# Python缓存
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Node.js
+node_modules/ 
