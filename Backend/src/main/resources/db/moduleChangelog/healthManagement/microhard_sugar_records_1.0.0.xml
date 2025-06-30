@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create allergen table -->
+    <changeSet id="sugar-records-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="sugar_records"/>
+            </not>
+        </preConditions>
+        <createTable tableName="sugar_records">
+            <column name="record_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="food_name" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="sugar_amount_mg" type="${type.double}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="quantity" type="${type.double}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="consumed_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="product_barcode" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="source" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="notes" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="created_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="sugar_records"
+            baseColumnNames="user_id"
+            referencedTableName="user"
+            referencedColumnNames="user_id"
+            constraintName="fk_sugar_records_user"
+            onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="sugar_records"
+            baseColumnNames="product_barcode"
+            referencedTableName="product"
+            referencedColumnNames="barcode"
+            constraintName="fk_sugar_records_product"
+            onDelete="CASCADE"/>
+        
+    </changeSet>
+</databaseChangeLog>

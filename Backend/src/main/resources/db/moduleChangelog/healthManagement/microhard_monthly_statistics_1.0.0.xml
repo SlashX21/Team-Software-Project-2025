@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create allergen table -->
+    <changeSet id="monthly-statistics-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="monthly_statistics"/>
+            </not>
+        </preConditions>
+        <createTable tableName="monthly_statistics">
+            <column name="stat_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="year" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="month" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="receipt_uploads" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="total_products" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="total_spent" type="${type.decimal}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="category_breakdown" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="popular_products" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="nutrition_breakdown" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="calculated_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="updated_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- 添加外键约束 - 单独的changeset -->
+    <changeSet id="monthly-statistics-add-foreign-key-1" author="YanhaoSun">
+        <addForeignKeyConstraint
+            baseTableName="monthly_statistics"
+            baseColumnNames="user_id"
+            referencedTableName="user"
+            referencedColumnNames="user_id"
+            constraintName="fk_monthly_statistics_records_user"
+            onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

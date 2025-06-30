@@ -5,9 +5,10 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <!-- 定义类型的转换-->
-     <!-- 比方说, 在mysql中, 把后端中的string类型映射为varchar(255)等等 -->
-        <property name="type.string" value="TEXT" dbms = "mysql"/>
+        <!-- Define type mapping -->
+        <!-- For example, map 'string' type to 'VARCHAR(255)' in MySQL -->
+        <property name="type.string" value="VARCHAR(255)" dbms = "mysql"/>
+        <property name="type.longtext" value="TEXT" dbms = "mysql"/>
         <property name="type.int" value="INT" dbms = "mysql"/>
         <property name="type.datetime" value="DATETIME" dbms = "mysql"/>
         <property name="type.timestamp" value="TIMESTAMP" dbms = "mysql"/>
@@ -15,6 +16,6 @@
         <property name="type.double" value="DOUBLE" dbms = "mysql"/>
         <property name="type.float" value="FLOAT" dbms = "mysql"/>
         <property name="type.decimal" value="DECIMAL" dbms = "mysql"/>
-        
+        <property name="type.date" value="DATE" dbms="mysql"/>
 
 </databaseChangeLog>

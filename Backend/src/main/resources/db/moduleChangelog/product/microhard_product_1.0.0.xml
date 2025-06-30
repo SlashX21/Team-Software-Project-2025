@@ -5,7 +5,7 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <!-- 创建产品表 -->
+    <!-- create product table -->
     <changeSet id="product-create-table-1" author="YanhaoSun">
         <preConditions onFail="MARK_RAN">
             <not>
@@ -13,19 +13,19 @@
             </not>
         </preConditions>
         <createTable tableName="product">
-            <column name="bar_code" type="VARCHAR(255)">
+            <column name="barcode" type="${type.string}">
                 <constraints primaryKey="true"/>
             </column>
-            <column name="product_name" type="${type.string}">
+            <column name="name" type="${type.string}">
                 <constraints nullable="false"/>
             </column>
             <column name="brand" type="${type.string}">
                 <!-- <constraints nullable="false"/> -->
             </column>
-            <column name="ingredients" type="${type.string}">
+            <column name="ingredients" type="${type.longtext}">
                 <!-- <constraints nullable="false"/> -->
             </column>
-            <column name="allergens" type="${type.string}">
+            <column name="allergens" type="${type.longtext}">
                 <!-- <constraints nullable="false"/> -->
             </column>
             <column name="energy_100g" type="${type.float}">
@@ -55,14 +55,6 @@
             <column name="category" type="${type.string}">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_at" type="${type.timestamp}">
-                <!-- <constraints nullable="false"/> -->
-            </column>
-            <column name="updated_at" type="${type.timestamp}">
-                <!-- <constraints nullable="false"/> -->
-            </column>
         </createTable>
     </changeSet>
-
-    <!-- 以后每次数据库变更都在这里添加新的changeSet -->
 </databaseChangeLog>
