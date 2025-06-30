@@ -125,8 +125,24 @@ Team- Project/
 
 ### 环境变量
 - 后端配置: `backend/Backend/src/main/resources/application.properties`
+- 将数据库密码替换为自己的密码。
+- 
 - 推荐系统: `backend/Recommendation/src/main/java/org/recommendation/Rec_LLM_Module/test_maven_db.env`
+# API Token for OCR system
+
+OPENAI_API_KEY=""
+API_TOKEN=""
+- 
 - OCR系统: `backend/Ocr/src/main/java/org/ocr/python/demo/.env`
+# Database configuration for Recommendation system
+DB_TYPE=mysql
+JAVA_DB_CONNECTION_STRING=mysql+pymysql://root:你的密码@localhost:3306/springboot_demo?charset=utf8mb4
+
+# OpenAI API Key for recommendation engine
+OPENAI_API_KEY="your_openai_api_key_here" # Replace with your actual key
+
+
+
 
 ## 📊 API文档
 
