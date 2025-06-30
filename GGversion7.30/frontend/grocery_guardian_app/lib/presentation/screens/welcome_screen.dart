@@ -4,8 +4,7 @@ import '../theme/app_colors.dart';
 import '../widgets/buttons.dart';
 
 import 'package:page_transition/page_transition.dart';
-import './SignUpPage.dart';
-import './SignInPage.dart';
+import './auth_page.dart';
 
 class WelcomeScreen extends StatefulWidget {
   final String? pageTitle;
@@ -34,14 +33,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             width: 200,
             margin: EdgeInsets.only(bottom: 0),
             child: froyoFlatBtn('Sign In', (){ 
-              Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.rightToLeft, duration: Duration(milliseconds: 500), child: SignInPage()));
+              Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.rightToLeft, duration: Duration(milliseconds: 500), child: AuthPage()));
             }),
           ),
           Container(
             width: 200,
             padding: EdgeInsets.all(0),
             child: froyoOutlineBtn('Sign Up', (){
-              Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.rightToLeft, duration: Duration(milliseconds: 500), child: SignUpPage()));
+              Navigator.pushReplacement(context, PageTransition(type: PageTransitionType.rightToLeft, duration: Duration(milliseconds: 500), child: AuthPage()));
             }),
           ),
           Container(

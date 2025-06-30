@@ -23,6 +23,7 @@ class _AuthPageState extends State<AuthPage> {
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _registeredUsername;
 
   @override
   void dispose() {
@@ -35,7 +36,18 @@ class _AuthPageState extends State<AuthPage> {
   void _toggleMode() {
     setState(() {
       _isLogin = !_isLogin;
-      _formKey.currentState?.reset();
+      
+      if (_isLogin && _registeredUsername != null) {
+        // 如果切换到登录模式且有已注册的用户名，自动填充用户名
+        _emailController.text = _registeredUsername!;
+        // 保留密码以便用户直接登录
+      } else {
+        // 如果切换到注册模式，清空表单
+        _formKey.currentState?.reset();
+        _emailController.clear();
+        _passwordController.clear();
+        _usernameController.clear();
+      }
     });
   }
 
@@ -81,10 +93,17 @@ class _AuthPageState extends State<AuthPage> {
         );
 
         if (success) {
+          // 保存注册的用户名
+          _registeredUsername = _usernameController.text.trim();
+          
           _showSuccessSnackBar('Registration successful! Please login.');
           setState(() {
             _isLogin = true;
-            _formKey.currentState?.reset();
+            // 不要重置表单，因为我们要保留部分信息
+            
+            // 自动填充登录表单
+            _emailController.text = _registeredUsername!;
+            // 密码保持不变，让用户可以直接登录
           });
         } else {
           _showErrorSnackBar('Registration failed. Please try again.');
@@ -297,6 +316,14 @@ class _AuthPageState extends State<AuthPage> {
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      onChanged: _isLogin && controller == _emailController 
+        ? (value) {
+            // 如果用户在登录模式下修改了用户名字段，清除自动填充标记
+            if (value != _registeredUsername) {
+              _registeredUsername = null;
+            }
+          }
+        : null,
       decoration: InputDecoration(
         labelText: labelText,
         prefixIcon: Icon(prefixIcon, color: AppColors.textLight),

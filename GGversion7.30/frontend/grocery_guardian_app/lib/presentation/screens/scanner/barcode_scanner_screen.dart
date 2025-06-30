@@ -236,12 +236,24 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 _receiptItems.clear();
                 _currentAnalysis = null;
               }),
-              icon: Icon(Icons.qr_code_scanner),
-              label: Text("Scan Barcode"),
+              icon: Icon(Icons.qr_code_scanner, size: 20),
+              label: Text(
+                "Scan Barcode",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+                shadowColor: AppColors.primary.withOpacity(0.3),
               ),
             ),
           ],
