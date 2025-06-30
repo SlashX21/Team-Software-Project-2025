@@ -1,0 +1,10 @@
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/controller/AllergenAnalysisController.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/enums/ActivityLevel.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/enums/Gender.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/enums/NutritionGoal.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/pojo/Allergen.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/pojo/DTO/AllergenDto.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/pojo/DTO/ResponseMessage.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/repository/AllergenRepository.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/service/AllergenService.java
+/Users/200ok/Team- Project/backend/Allergen/src/main/java/org/allergen/service/IAllergenService.java
