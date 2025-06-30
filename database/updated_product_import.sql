@@ -72,8 +72,7 @@ SELECT 'Temporary import table created ✅' AS status;
 
 -- Import raw CSV data
 -- ⚠️  MODIFY THE FILE PATH TO YOUR ACTUAL CSV LOCATION ⚠️
-/*
-LOAD DATA LOCAL INFILE '/path/to/ireland_products_standardized.csv'
+LOAD DATA LOCAL INFILE './ireland_products_final.csv'
 INTO TABLE TEMP_PRODUCT_IMPORT
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -83,7 +82,6 @@ IGNORE 1 ROWS
  energy_100g_raw, energy_kcal_100g_raw, fat_100g_raw, saturated_fat_100g_raw, 
  carbohydrates_100g_raw, sugars_100g_raw, proteins_100g_raw, 
  serving_size_raw, category_raw);
-*/
 
 -- Alternative: If LOAD DATA LOCAL INFILE doesn't work, use CSV import tool
 -- and run the verification query below:

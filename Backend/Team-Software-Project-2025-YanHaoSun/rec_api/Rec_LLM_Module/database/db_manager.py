@@ -11,6 +11,8 @@ import sqlite3
 import json
 from dataclasses import dataclass, field
 import os
+import pymysql
+import pymysql.cursors
 
 from config.settings import get_database_config, DatabaseConfig
 from config.constants import AllergenPresenceType, PreferenceType
@@ -537,6 +539,401 @@ class SQLiteAdapter(DatabaseAdapter):
             logger.error(f"获取推荐统计失败 {user_id}: {e}")
             return {"user_id": user_id, "stats": {}, "type_distribution": {}}
 
+class MySQLAdapter(DatabaseAdapter):
+    """MySQL数据库适配器实现"""
+    
+    def __init__(self, config: DatabaseConfig):
+        super().__init__(config)
+        # 解析MySQL连接字符串 mysql+pymysql://user:password@host:port/database
+        connection_string = config.connection_string
+        if connection_string.startswith("mysql+pymysql://"):
+            connection_string = connection_string.replace("mysql+pymysql://", "")
+        
+        # 解析连接参数
+        parts = connection_string.split("@")
+        user_pass = parts[0].split(":")
+        host_db = parts[1].split("/")
+        host_port = host_db[0].split(":")
+        
+        self.host = host_port[0]
+        self.port = int(host_port[1]) if len(host_port) > 1 else 3306
+        self.user = user_pass[0]
+        self.password = user_pass[1] if len(user_pass) > 1 else ""
+        self.database = host_db[1]
+        
+    def connect(self) -> bool:
+        try:
+            self.connection = pymysql.connect(
+                host=self.host,
+                port=self.port,
+                user=self.user,
+                password=self.password,
+                database=self.database,
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor,
+                autocommit=True
+            )
+            logger.info(f"MySQL连接成功: {self.host}:{self.port}/{self.database}")
+            return True
+        except Exception as e:
+            logger.error(f"MySQL连接失败: {e}")
+            return False
+
+    def disconnect(self) -> None:
+        """断开MySQL连接"""
+        if self.connection:
+            self.connection.close()
+            self.connection = None
+            logger.info("MySQL database connection closed")
+    
+    def get_product_by_barcode(self, barcode: str) -> Optional[Dict]:
+        """根据条形码查询商品信息"""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            SELECT bar_code, product_name, brand, ingredients, allergens,
+                   energy_100g, energy_kcal_100g, fat_100g, saturated_fat_100g,
+                   carbohydrates_100g, sugars_100g, proteins_100g,
+                   serving_size, category, created_at, updated_at
+            FROM product 
+            WHERE bar_code = %s
+            """
+            
+            cursor.execute(query, (barcode,))
+            row = cursor.fetchone()
+            
+            if row:
+                return dict(row)
+            return None
+            
+        except Exception as e:
+            logger.error(f"查询商品失败 {barcode}: {e}")
+            return None
+    
+    def get_products_by_category(self, category: str, limit: int = 100) -> List[Dict]:
+        """查询指定分类的商品列表"""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            SELECT bar_code, product_name, brand, category,
+                   energy_kcal_100g, proteins_100g, fat_100g, sugars_100g,
+                   carbohydrates_100g
+            FROM product 
+            WHERE category = %s
+            ORDER BY product_name
+            LIMIT %s
+            """
+            
+            cursor.execute(query, (category, limit))
+            rows = cursor.fetchall()
+            
+            # 后处理：确保营养数据不为None
+            products = []
+            for row in rows:
+                # 将None值替换为0
+                nutrition_fields = [
+                    "energy_kcal_100g", "proteins_100g", "fat_100g", 
+                    "sugars_100g", "carbohydrates_100g"
+                ]
+                for field in nutrition_fields:
+                    if row.get(field) is None:
+                        row[field] = 0.0
+                products.append(row)
+            
+            return products
+            
+        except Exception as e:
+            logger.error(f"查询分类商品失败 {category}: {e}")
+            return []
+    
+    def search_products_by_nutrition(self, filters: Dict) -> List[Dict]:
+        """根据营养条件筛选商品"""
+        try:
+            cursor = self.connection.cursor()
+            
+            # 构建动态查询条件
+            conditions = []
+            params = []
+            
+            if "min_protein" in filters:
+                conditions.append("proteins_100g >= %s")
+                params.append(filters["min_protein"])
+            
+            if "max_calories" in filters:
+                conditions.append("energy_kcal_100g <= %s")
+                params.append(filters["max_calories"])
+            
+            if "max_fat" in filters:
+                conditions.append("fat_100g <= %s")
+                params.append(filters["max_fat"])
+            
+            if "max_sugar" in filters:
+                conditions.append("sugars_100g <= %s")
+                params.append(filters["max_sugar"])
+            
+            if "category" in filters:
+                conditions.append("category = %s")
+                params.append(filters["category"])
+            
+            where_clause = " AND ".join(conditions) if conditions else "1=1"
+            
+            query = f"""
+            SELECT bar_code, product_name, brand, category,
+                   energy_kcal_100g, proteins_100g, fat_100g, sugars_100g,
+                   carbohydrates_100g, allergens
+            FROM product 
+            WHERE {where_clause}
+            ORDER BY proteins_100g DESC
+            LIMIT %s
+            """
+            
+            params.append(filters.get("limit", 50))
+            cursor.execute(query, tuple(params))
+            
+            return cursor.fetchall()
+            
+        except Exception as e:
+            logger.error(f"营养筛选查询失败: {e}")
+            return []
+    
+    def get_user_profile(self, user_id: int) -> Optional[Dict]:
+        """获取用户完整画像"""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            SELECT user_id, user_name, email, gender, height_cm, weight_kg,
+                   activity_level, nutrition_goal, daily_calories_target,
+                   daily_protein_target, daily_carb_target, daily_fat_target,
+                   created_time
+            FROM user
+            WHERE user_id = %s
+            """
+            
+            cursor.execute(query, (user_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                return dict(row)
+            return None
+            
+        except Exception as e:
+            logger.error(f"查询用户画像失败 {user_id}: {e}")
+            return None
+    
+    def get_user_allergens(self, user_id: int) -> List[Dict]:
+        """获取用户过敏原列表"""
+        try:
+            cursor = self.connection.cursor()
+            # 注意：这里假设存在user_allergen关联表，如果没有则返回空列表
+            query = """
+            SELECT a.allergen_id, a.name, a.category, a.is_common
+            FROM allergen a
+            JOIN user_allergen ua ON a.allergen_id = ua.allergen_id
+            WHERE ua.user_id = %s
+            """
+            
+            cursor.execute(query, (user_id,))
+            return cursor.fetchall()
+            
+        except Exception as e:
+            logger.info(f"用户过敏原表可能不存在 {user_id}: {e}")
+            return []
+    
+    def get_user_preferences(self, user_id: int) -> Optional[Dict]:
+        """获取用户动态偏好"""
+        try:
+            cursor = self.connection.cursor()
+            # 注意：这里假设存在user_preference表，如果没有则返回默认偏好
+            query = """
+            SELECT user_id, nutrition_goal, preferred_categories,
+                   activity_level, dietary_restrictions
+            FROM user_preference 
+            WHERE user_id = %s
+            """
+            
+            cursor.execute(query, (user_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                return dict(row)
+            
+            # 返回默认偏好
+            return {
+                "user_id": user_id,
+                "nutrition_goal": "maintain",
+                "preferred_categories": "Food",
+                "activity_level": "moderate",
+                "dietary_restrictions": None
+            }
+            
+        except Exception as e:
+            logger.info(f"用户偏好表可能不存在 {user_id}: {e}")
+            return {
+                "user_id": user_id,
+                "nutrition_goal": "maintain",
+                "preferred_categories": "Food",
+                "activity_level": "moderate",
+                "dietary_restrictions": None
+            }
+    
+    def get_purchase_history(self, user_id: int, days: int = 90) -> List[Dict]:
+        """获取用户购买历史记录"""
+        try:
+            cursor = self.connection.cursor()
+            # 注意：这里假设存在purchase_record表，如果没有则返回空列表
+            query = """
+            SELECT pr.bar_code, p.product_name, p.brand, p.category,
+                   pr.quantity, pr.purchase_date
+            FROM purchase_record pr
+            JOIN product p ON pr.bar_code = p.bar_code
+            WHERE pr.user_id = %s 
+            AND pr.purchase_date >= DATE_SUB(NOW(), INTERVAL %s DAY)
+            ORDER BY pr.purchase_date DESC
+            """
+            
+            cursor.execute(query, (user_id, days))
+            return cursor.fetchall()
+            
+        except Exception as e:
+            logger.info(f"购买历史表可能不存在 {user_id}: {e}")
+            return []
+    
+    def get_user_purchase_matrix(self, user_id: int) -> Dict:
+        """获取用户-商品购买矩阵（用于协同过滤）"""
+        # 简化实现，返回基础矩阵
+        return {
+            "user_id": user_id,
+            "purchase_counts": {},
+            "category_preferences": {},
+            "last_updated": datetime.now().isoformat()
+        }
+    
+    def check_product_allergens(self, barcode: str, user_allergens: List[int]) -> Dict:
+        """检查商品是否包含用户过敏原"""
+        try:
+            product = self.get_product_by_barcode(barcode)
+            if not product:
+                return {"safe": False, "detected_allergens": [], "warnings": ["商品未找到"]}
+            
+            allergens_text = product.get("allergens", "").lower()
+            detected_allergens = []
+            warnings = []
+            
+            cursor = self.connection.cursor()
+            
+            for allergen_id in user_allergens:
+                query = "SELECT name FROM allergen WHERE allergen_id = %s"
+                cursor.execute(query, (allergen_id,))
+                row = cursor.fetchone()
+                
+                if row and row["name"].lower() in allergens_text:
+                    detected_allergens.append({
+                        "allergen_id": allergen_id,
+                        "name": row["name"],
+                        "detected_in": "ingredients"
+                    })
+            
+            return {
+                "safe": len(detected_allergens) == 0,
+                "detected_allergens": detected_allergens,
+                "warnings": warnings,
+                "checked_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"过敏原检查失败 {barcode}: {e}")
+            return {"safe": False, "detected_allergens": [], "warnings": ["过敏原检查失败"]}
+    
+    def get_allergen_by_name(self, allergen_name: str) -> Optional[Dict]:
+        """根据名称查询过敏原信息"""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            SELECT allergen_id, name, category, is_common, description
+            FROM allergen 
+            WHERE name = %s OR name LIKE %s
+            ORDER BY is_common DESC, name
+            LIMIT 1
+            """
+            
+            cursor.execute(query, (allergen_name, f"%{allergen_name}%"))
+            row = cursor.fetchone()
+            
+            if row:
+                return dict(row)
+            return None
+            
+        except Exception as e:
+            logger.error(f"查询过敏原失败 {allergen_name}: {e}")
+            return None
+    
+    def log_recommendation(self, log_data: Dict) -> bool:
+        """记录推荐请求和结果"""
+        try:
+            cursor = self.connection.cursor()
+            # 注意：这里假设recommendation_log表存在，如果不存在则跳过记录
+            query = """
+            INSERT INTO recommendation_log (
+                user_id, request_bar_code, request_type, recommended_products,
+                algorithm_version, llm_prompt, llm_response, llm_analysis,
+                processing_time_ms, total_candidates, filtered_candidates,
+                created_at
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            
+            values = (
+                log_data.get("user_id"),
+                log_data.get("request_barcode"),
+                log_data.get("request_type"),
+                json.dumps(log_data.get("recommended_products", []), ensure_ascii=False),
+                log_data.get("algorithm_version", "v1.0"),
+                log_data.get("llm_prompt"),
+                log_data.get("llm_response"),
+                log_data.get("llm_analysis"),
+                log_data.get("processing_time_ms", 0),
+                log_data.get("total_candidates", 0),
+                log_data.get("filtered_candidates", 0),
+                datetime.now()
+            )
+            
+            cursor.execute(query, values)
+            logger.info(f"推荐日志记录成功")
+            return True
+            
+        except Exception as e:
+            logger.info(f"推荐日志记录失败（表可能不存在）: {e}")
+            return False
+    
+    def get_recommendation_stats(self, user_id: int) -> Dict:
+        """获取用户推荐统计信息"""
+        try:
+            cursor = self.connection.cursor()
+            
+            # 基础统计
+            stats_query = """
+            SELECT 
+                COUNT(*) as total_recommendations,
+                COUNT(DISTINCT request_bar_code) as unique_products_scanned,
+                AVG(processing_time_ms) as avg_processing_time,
+                MAX(created_at) as last_recommendation_time
+            FROM recommendation_log 
+            WHERE user_id = %s
+            """
+            
+            cursor.execute(stats_query, (user_id,))
+            stats = cursor.fetchone()
+            
+            return {
+                "user_id": user_id,
+                "stats": stats or {},
+                "type_distribution": {},
+                "generated_at": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            logger.info(f"获取推荐统计失败（表可能不存在） {user_id}: {e}")
+            return {"user_id": user_id, "stats": {}, "type_distribution": {}}
+
 @dataclass
 class DatabaseManager:
     """数据库管理器 - 适配器模式实现"""
@@ -569,6 +966,8 @@ class DatabaseManager:
             config = get_database_config()
             if config.type == "sqlite":
                 self.adapter = SQLiteAdapter(config)
+            elif config.type == "mysql":
+                self.adapter = MySQLAdapter(config)
             else:
                 raise ValueError(f"不支持的数据库类型: {config.type}")
     

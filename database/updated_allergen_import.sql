@@ -64,7 +64,7 @@ SELECT 'Temporary allergen import table created ✅' AS status;
 -- Import raw CSV data
 -- MODIFY THE FILE PATH TO YOUR ACTUAL CSV LOCATION ⚠️
 
-LOAD DATA LOCAL INFILE 'C:/Users/tpz20/Desktop/allergen_dictionary.csv'
+LOAD DATA LOCAL INFILE './allergen_dictionary.csv'
 INTO TABLE TEMP_ALLERGEN_IMPORT
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'

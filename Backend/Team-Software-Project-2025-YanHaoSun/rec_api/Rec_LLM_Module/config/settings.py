@@ -112,8 +112,8 @@ class ConfigManager:
         configs = {
             Environment.LOCAL: {
                 "database": DatabaseConfig(
-                    type="sqlite",
-                    connection_string=f"sqlite:///{project_root}/data/grocery_guardian.db",
+                    type="mysql",
+                    connection_string="mysql+pymysql://root:20020213Lx@localhost:3306/springboot_demo",
                     echo=False
                 ),
                 "llm": LLMConfig(

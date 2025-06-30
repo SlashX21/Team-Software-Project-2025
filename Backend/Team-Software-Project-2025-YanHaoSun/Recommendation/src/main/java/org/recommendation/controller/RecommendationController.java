@@ -103,7 +103,7 @@ public class RecommendationController {
      * 分析用户购买的商品清单，提供营养分析和推荐建议
      */
     @PostMapping("/receipt")
-    public ResponseMessage<Map<String, Object>> getReceiptAnalysis(@RequestBody ReceiptRecommendationRequest request) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getReceiptAnalysis(@RequestBody ReceiptRecommendationRequest request) {
         try {
             // 准备请求头
             HttpHeaders headers = new HttpHeaders();
@@ -127,10 +127,20 @@ public class RecommendationController {
                 Map.class
             );
             
-            return ResponseMessage.success((Map<String, Object>) response.getBody());
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success(
+                (Map<String, Object>) response.getBody(),
+                "小票分析成功"
+            );
+            
+            return ResponseEntity.ok(apiResponse);
             
         } catch (Exception e) {
-            return new ResponseMessage<>(500, "调用小票分析服务失败: " + e.getMessage(), null);
+            throw new BusinessException(
+                "RECEIPT_ANALYSIS_ERROR",
+                "调用小票分析服务失败",
+                e.getMessage(),
+                HttpStatus.SERVICE_UNAVAILABLE
+            );
         }
     }
     
@@ -138,7 +148,7 @@ public class RecommendationController {
      * 推荐系统健康检查接口
      */
     @GetMapping("/health")
-    public ResponseMessage<Map<String, Object>> health() {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         try {
             // 调用Python推荐服务的健康检查接口
             ResponseEntity<Map> response = restTemplate.getForEntity(
@@ -146,10 +156,20 @@ public class RecommendationController {
                 Map.class
             );
             
-            return ResponseMessage.success((Map<String, Object>) response.getBody());
+            ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success(
+                (Map<String, Object>) response.getBody(),
+                "推荐服务健康检查成功"
+            );
+            
+            return ResponseEntity.ok(apiResponse);
             
         } catch (Exception e) {
-            return new ResponseMessage<>(503, "推荐服务不可用: " + e.getMessage(), null);
+            throw new BusinessException(
+                "RECOMMENDATION_SERVICE_UNAVAILABLE",
+                "推荐服务不可用",
+                e.getMessage(),
+                HttpStatus.SERVICE_UNAVAILABLE
+            );
         }
     }
     

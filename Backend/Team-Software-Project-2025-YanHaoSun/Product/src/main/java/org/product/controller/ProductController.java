@@ -1,6 +1,6 @@
 package org.product.controller;
 
-import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
+import org.common.dto.ApiResponse;
 import org.product.pojo.DTO.ProductDto;
 import org.product.pojo.Product;
 import org.product.service.IProductService;
@@ -23,26 +23,26 @@ public class ProductController {
 
     // add new product
     @PostMapping // URL: localhost:8088/product method: post
-    public ResponseMessage<Product> add(@Validated @RequestBody ProductDto product){
+    public ApiResponse<Product> add(@Validated @RequestBody ProductDto product){
         // System.out.println("ProductController.add() called");
         // System.out.println("Received ProductDto: " + product.toString());
         Product productNew = productService.add(product);
-        return ResponseMessage.success(productNew);
+        return ApiResponse.success(productNew);
     }
 
     // query product
     @GetMapping("/{barcode}") // URL: localhost:8088/user/'123456' method: get
-    public ResponseMessage<Product> get(@PathVariable String barcode){
+    public ApiResponse<Product> get(@PathVariable String barcode){
         Product productNew = productService.getProduct(barcode);
-        return ResponseMessage.success(productNew);
+        return ApiResponse.success(productNew);
     }
     
     // 修改
     // put mapping
     @PutMapping // URL: localhost:8088/product/ method: put
-    public ResponseMessage<Product> edit(@Validated @RequestBody ProductDto product){
+    public ApiResponse<Product> edit(@Validated @RequestBody ProductDto product){
         Product productNew = productService.edit(product);
-        return ResponseMessage.success(productNew);
+        return ApiResponse.success(productNew);
     }
 
     // 如果需要通过barcode来对product进行修改, 则使用这个, 传递barcode和body
@@ -56,9 +56,15 @@ public class ProductController {
     // 删除
     // delete mapping
     @DeleteMapping("/{barcode}") // URL: localhost:8088/product/1 method: get
-    public ResponseMessage<Product> delete(@PathVariable String barcode){
+    public ApiResponse<Product> delete(@PathVariable String barcode){
         productService.delete(barcode);
-        return ResponseMessage.success();
+        return ApiResponse.success();
+    }
+
+    // Health check endpoint
+    @GetMapping("/health")
+    public ApiResponse<String> health() {
+        return ApiResponse.success("Product service is running", "商品服务健康检查通过");
     }
 
 }

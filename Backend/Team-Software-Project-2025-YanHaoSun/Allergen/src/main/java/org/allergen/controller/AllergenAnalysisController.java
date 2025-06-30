@@ -2,7 +2,7 @@ package org.allergen.controller;
 
 import org.allergen.pojo.Allergen;
 import org.allergen.pojo.DTO.AllergenDto;
-import org.allergen.pojo.DTO.ResponseMessage;
+import org.common.dto.ApiResponse;
 import org.allergen.service.IAllergenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -26,30 +26,36 @@ public class AllergenAnalysisController {
 
     // add new allergen
     @PostMapping
-    public ResponseMessage<Allergen> postMethodName(@Validated @RequestBody AllergenDto allergenDto) {
+    public ApiResponse<Allergen> postMethodName(@Validated @RequestBody AllergenDto allergenDto) {
         Allergen allergen = allergenService.add(allergenDto);
-        return ResponseMessage.success(allergen);
+        return ApiResponse.success(allergen);
     }
 
     // query product
     @GetMapping("/{allergenId}") // URL: localhost:8088/user/'123456' method: get
-    public ResponseMessage<Allergen> get(@PathVariable Integer allergenId){
+    public ApiResponse<Allergen> get(@PathVariable Integer allergenId){
         Allergen allergen = allergenService.get(allergenId);
-        return ResponseMessage.success(allergen);
+        return ApiResponse.success(allergen);
     }
 
     // put mapping
     @PutMapping
-    public ResponseMessage<Allergen> edit(@Validated @RequestBody AllergenDto allergenDto) {
+    public ApiResponse<Allergen> edit(@Validated @RequestBody AllergenDto allergenDto) {
         Allergen allergen = allergenService.update(allergenDto);
-        return ResponseMessage.success(allergen);
+        return ApiResponse.success(allergen);
     }
 
     // delete mapping
     @DeleteMapping("/{allergenId}")
-    public ResponseMessage<Allergen> delete(@PathVariable Integer allergenId) {
+    public ApiResponse<Allergen> delete(@PathVariable Integer allergenId) {
         allergenService.delete(allergenId);
-        return ResponseMessage.success();
+        return ApiResponse.success();
+    }
+
+    // Health check endpoint
+    @GetMapping("/health")
+    public ApiResponse<String> health() {
+        return ApiResponse.success("Allergen service is running", "过敏原服务健康检查通过");
     }
     
 }

@@ -1,7 +1,7 @@
 package org.ocr.controller;
 
 // import org.ocr.pojo.DTO.ResponseMessage;
-import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
+import org.common.dto.ApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
@@ -31,17 +31,17 @@ public class OcrController {
      * 图片上传扫描接口 /ocr/scan
      */
     @PostMapping(value = "/scan", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseMessage<Map<String, Object>> scanReceipt(@RequestParam("file") MultipartFile file) {
+    public ApiResponse<Map<String, Object>> scanReceipt(@RequestParam("file") MultipartFile file) {
         try {
             // 检查图片是否为空
             if (file.isEmpty()) {
-                return new ResponseMessage<>(400, "文件不能为空", null);
+                return ApiResponse.error("FILE_EMPTY", "文件不能为空");
             }
             
             // 判断文件类型是不是图片，如果不是图片，则返回错误
             String contentType = file.getContentType();
             if (contentType == null || !contentType.startsWith("image/")) {
-                return new ResponseMessage<>(400, "只支持图片文件", null);
+                return ApiResponse.error("INVALID_FILE_TYPE", "只支持图片文件");
             }
             
             // 准备请求头
@@ -68,12 +68,12 @@ public class OcrController {
                 Map.class
             );
             
-            return ResponseMessage.success((Map<String, Object>) response.getBody());
+            return ApiResponse.success((Map<String, Object>) response.getBody());
             
         } catch (IOException e) {
-            return new ResponseMessage<>(500, "读取文件失败: " + e.getMessage(), null);
+            return ApiResponse.error("FILE_READ_ERROR", "读取文件失败: " + e.getMessage());
         } catch (Exception e) {
-            return new ResponseMessage<>(500, "调用OCR服务失败: " + e.getMessage(), null);
+            return ApiResponse.error("OCR_SERVICE_ERROR", "调用OCR服务失败: " + e.getMessage());
         }
     }
     
@@ -88,7 +88,7 @@ public class OcrController {
      *  4. 直接用 RestTemplate 发送 POST 请求到 /barcode，返回结果给前端
      */
     @PostMapping("/barcode")
-    public ResponseMessage<Map<String, Object>> processBarcode(@RequestBody Map<String, String> request) {
+    public ApiResponse<Map<String, Object>> processBarcode(@RequestBody Map<String, String> request) {
         try {
             // 准备请求头
             HttpHeaders headers = new HttpHeaders();
@@ -104,10 +104,10 @@ public class OcrController {
                 Map.class
             );
             
-            return ResponseMessage.success((Map<String, Object>) response.getBody());
+            return ApiResponse.success((Map<String, Object>) response.getBody());
             
         } catch (Exception e) {
-            return new ResponseMessage<>(500, "调用条码服务失败: " + e.getMessage(), null);
+            return ApiResponse.error("BARCODE_SERVICE_ERROR", "调用条码服务失败: " + e.getMessage());
         }
     }
     
@@ -115,7 +115,7 @@ public class OcrController {
      * 健康检查接口
      */
     @GetMapping("/health")
-    public ResponseMessage<String> health() {
-        return ResponseMessage.success("OCR服务运行正常");
+    public ApiResponse<String> health() {
+        return ApiResponse.success("OCR服务运行正常");
     }
 } 

@@ -118,7 +118,7 @@ Future<Map<String, dynamic>?> loginUser({
 
   if (response.statusCode == 200) {
     final Map<String, dynamic> json = jsonDecode(response.body);
-    if (json['code'] == 200 && json['data'] != null) {
+    if (json['success'] == true && json['data'] != null) {
       return json['data'];
     }
   }

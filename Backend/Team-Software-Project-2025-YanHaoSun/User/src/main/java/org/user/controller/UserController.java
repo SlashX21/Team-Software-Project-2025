@@ -6,7 +6,7 @@ package org.user.controller;
 // import com.demo.springboot_demo.service.IUserService;
 
 
-import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
+import org.common.dto.ApiResponse;
 import org.user.pojo.DTO.UserDto;
 import org.user.pojo.User;
 
@@ -32,40 +32,46 @@ public class UserController {
 
     // Register user
     @PostMapping // URL: localhost:8080/user/ method: post
-    public ResponseMessage<User> add(@Validated @RequestBody UserDto user){
+    public ApiResponse<User> add(@Validated @RequestBody UserDto user){
         System.out.println("Register user success");
         User userNew = userService.add(user);
-        return ResponseMessage.success(userNew);
+        return ApiResponse.success(userNew);
     }
 
     // Login user
     @PostMapping("/login") // URL: localhost:8080/user/login method: post
-    public ResponseMessage<User> login(@Validated @RequestBody UserDto user){
+    public ApiResponse<User> login(@Validated @RequestBody UserDto user){
         System.out.println("User login attempt for: " + user.getUserName());
         User userNew = userService.logIn(user);
         System.out.println("User login success for: " + user.getUserName());
-        return ResponseMessage.success(userNew);
+        return ApiResponse.success(userNew);
     }
 
     // query user
     @GetMapping("/{userId}") // URL: localhost:8080/user/1 method: get
-    public ResponseMessage<User> get(@PathVariable Integer userId){
+    public ApiResponse<User> get(@PathVariable Integer userId){
         User userNew = userService.getUser(userId);
-        return ResponseMessage.success(userNew);
+        return ApiResponse.success(userNew);
     }
     // 修改
     // put mapping
     @PutMapping // URL: localhost:8080/user/ method: put
-    public ResponseMessage<User> edit(@Validated @RequestBody UserDto user){
+    public ApiResponse<User> edit(@Validated @RequestBody UserDto user){
         User userNew = userService.edit(user);
-        return ResponseMessage.success(userNew);
+        return ApiResponse.success(userNew);
     }
 
     // 删除
     // delete mapping
     @DeleteMapping("/{userId}") // URL: localhost:8080/user/1 method: delete
-    public ResponseMessage<User> delete(@PathVariable Integer userId){
+    public ApiResponse<User> delete(@PathVariable Integer userId){
         userService.delete(userId);
-        return ResponseMessage.success();
+        return ApiResponse.success();
+    }
+
+    // Health check endpoint
+    @GetMapping("/health")
+    public ApiResponse<String> health() {
+        return ApiResponse.success("User service is running", "健康检查通过");
     }
 }
