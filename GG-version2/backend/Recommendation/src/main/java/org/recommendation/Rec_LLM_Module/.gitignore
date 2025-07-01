@@ -1,0 +1,113 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+database/venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+data/grocery_guardian.db
+database/data/grocery_guardian.db
+
+# 日志文件
+*.log
+*.out
+logs/
+test_results.log
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# API密钥文件
+openai_api.txt
+*.key
+*.pem
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+.pytest_cache/
+
+# 文档草稿(保留最终版本)
+*_plan.md
+*_draft.md
+database_development_plan.md
+project_master_plan.md
+recommendation_llm_plan.md
+grocery_guardian_db_report.md
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Coverage报告
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# 大型数据文件(如果有的话)
+*.csv.gz
+*.json.gz
+data/*.csv
+!data/sample_*.csv 
