@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-multipart
+openai
+azure-ai-vision-imageanalysis
+python-dotenv
+Pillow
+pyzbar
+jinja2
