@@ -30,9 +30,10 @@ public interface IUserHistoryService {
      * obtain user history stats
      * 
      * @param userId user id
+     * @param period time period ('week', 'month', 'year')
      * @return stats map
      */
-    java.util.Map<String, Object> getUserHistoryStats(Integer userId);
+    java.util.Map<String, Object> getUserHistoryStats(Integer userId, String period);
 
     /**
      * obtain history by id
@@ -42,4 +43,12 @@ public interface IUserHistoryService {
      * @return history response dto
      */
     UserHistoryResponseDto getUserHistoryById(Integer userId, String historyId);
+
+    /**
+     * delete history by id
+     * 
+     * @param userId user id
+     * @param historyId history id
+     */
+    void deleteUserHistoryById(Integer userId, String historyId);
 } 

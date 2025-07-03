@@ -60,19 +60,6 @@ public class UserHistoryService implements IUserHistoryService {
     }
     
     @Override
-    public Map<String, Object> getUserHistoryStats(Integer userId) {
-        Map<String, Object> stats = new HashMap<>();
-        
-        Long totalCount = scanHistoryRepository.countByUserId(userId);
-        Long uniqueProductCount = scanHistoryRepository.countDistinctProductsByUserId(userId);
-        
-        stats.put("totalScans", totalCount);
-        stats.put("uniqueProducts", uniqueProductCount);
-        
-        return stats;
-    }
-    
-    @Override
     public UserHistoryResponseDto getUserHistoryById(Integer userId, String historyId) {
         // analysis historyId to obtain scanId
         Integer scanId;
@@ -99,6 +86,94 @@ public class UserHistoryService implements IUserHistoryService {
         return convertToDetailedResponseDto(scanHistory);
     }
     
+    @Override
+    public void deleteUserHistoryById(Integer userId, String historyId) {
+        Integer scanId;
+        // analysis historyId to obtain scanId
+        try{
+            if (historyId.startsWith("hist_")){
+                scanId = Integer.parseInt(historyId.substring(5));
+            } else {
+                scanId = Integer.parseInt(historyId);
+            }
+        }
+        catch(Exception e){
+            throw new IllegalArgumentException("Invalid history ID format: "+historyId);
+        }
+        scanHistoryRepository.deleteById(scanId);
+    }
+    
+    @Override
+    public Map<String, Object> getUserHistoryStats(Integer userId, String period) {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // calculate date range
+        String[] dateRange = calculateDateRange(period);
+        String startDate = dateRange[0];
+        String endDate = dateRange[1];
+        
+        // obtain scan history list with specific date range
+        List<ScanHistory> scanHistoryList = scanHistoryRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+        
+        // statistic different types of scans
+        int barcodeScans = 0;
+        int receiptScans = 0;
+        double totalHealthScore = 0.0;
+        int healthScoreCount = 0;
+        Map<String, Integer> scansByDate = new HashMap<>();
+        Map<String, Integer> categoryCount = new HashMap<>();
+        
+        for (ScanHistory scanHistory : scanHistoryList) {
+            // statistics scan type
+            if (scanHistory.getScanType() == ScanType.BARCODE) {
+                barcodeScans++;
+            } else if (scanHistory.getScanType() == ScanType.RECEIPT) {
+                receiptScans++;
+            }
+            
+            // statistics daily scans
+            String scanDate = extractDateFromScanTime(scanHistory.getScanTime());
+            scansByDate.put(scanDate, scansByDate.getOrDefault(scanDate, 0) + 1);
+            
+            // calculate health score
+            ProductInfo productInfo = getProductInfoByBarcode(scanHistory.getBarcode());
+            if (productInfo != null) {
+                Double healthScore = calculateHealthScoreFromProductInfo(productInfo);
+                if (healthScore != null) {
+                    totalHealthScore += healthScore;
+                    healthScoreCount++;
+                }
+                
+                // statistics product category
+                String category = determineProductCategory(productInfo);
+                if (category != null && !category.isEmpty()) {
+                    categoryCount.put(category, categoryCount.getOrDefault(category, 0) + 1);
+                }
+            }
+        }
+        
+        // calculate average health score
+        Double averageHealthScore = healthScoreCount > 0 ? totalHealthScore / healthScoreCount : 0.0;
+        
+        // obtain top category
+        List<String> topCategories = categoryCount.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(4)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        
+        // build return data
+        stats.put("totalScans", scanHistoryList.size());
+        stats.put("barcodeScans", barcodeScans);
+        stats.put("receiptScans", receiptScans);
+        // keep 1 decimal place
+        stats.put("averageHealthScore", Math.round(averageHealthScore * 10.0) / 10.0); 
+        stats.put("scansByDate", scansByDate);
+        stats.put("topCategories", topCategories);
+        
+        return stats;
+    }
+
     /**
      * convert ScanHistory to UserHistoryListDto for list interface
      */
@@ -264,7 +339,7 @@ public class UserHistoryService implements IUserHistoryService {
     }
     
     /**
-     * 创建默认完整分析数据（用于未知产品）
+     * create default full analysis data (for unknown product)
      */
     private UserHistoryResponseDto.FullAnalysisDto createDefaultFullAnalysis() {
         List<String> ingredients = List.of("Information not available");
@@ -326,7 +401,7 @@ public class UserHistoryService implements IUserHistoryService {
     }
     
     /**
-     * 获取产品成分列表（模拟实现，现已被parseIngredients替代）
+     * get product ingredients list (simulated implementation, now replaced by parseIngredients)
      */
     private List<String> getProductIngredients(String barcode) {
         // 这里可以调用产品服务API或从数据库查询
@@ -335,7 +410,7 @@ public class UserHistoryService implements IUserHistoryService {
     }
     
     /**
-     * 获取产品过敏原列表（模拟实现，现已被parseAllergens替代）
+     * get product allergens list (simulated implementation, now replaced by parseAllergens)
      */
     private List<String> getProductAllergens(String barcode) {
         // 这里可以调用过敏原服务API
@@ -655,6 +730,30 @@ public class UserHistoryService implements IUserHistoryService {
             return 0;
         } catch (JsonProcessingException e) {
             return 0;
+        }
+    }
+    
+    /**
+     * extract date from scan time string
+     * 
+     * @param scanTime scan time string (format: "yyyy-MM-dd HH:mm:ss")
+     * @return date string (format: "yyyy-MM-dd")
+     */
+    private String extractDateFromScanTime(String scanTime) {
+        if (scanTime == null || scanTime.isEmpty()) {
+            return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        }
+        
+        try {
+            // 尝试解析完整的日期时间格式
+            if (scanTime.contains(" ")) {
+                return scanTime.split(" ")[0];
+            }
+            // 如果已经是日期格式，直接返回
+            return scanTime;
+        } catch (Exception e) {
+            // 如果解析失败，返回当前日期
+            return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         }
     }
 } 

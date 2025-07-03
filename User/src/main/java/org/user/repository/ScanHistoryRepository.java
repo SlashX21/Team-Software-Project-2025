@@ -71,4 +71,28 @@ public interface ScanHistoryRepository extends JpaRepository<ScanHistory, Intege
      */
     @Query("SELECT COUNT(DISTINCT sh.barcode) FROM ScanHistory sh WHERE sh.userId = :userId")
     Long countDistinctProductsByUserId(@Param("userId") Integer userId);
+    
+    /**
+     * Find all scan history by user id
+     */
+    java.util.List<ScanHistory> findByUserId(Integer userId);
+    
+    /**
+     * Get scan history within date range for statistics
+     */
+    @Query("SELECT sh FROM ScanHistory sh WHERE sh.userId = :userId AND sh.scanTime >= :startDate AND sh.scanTime <= :endDate ORDER BY sh.scanTime DESC")
+    java.util.List<ScanHistory> findByUserIdAndDateRange(
+            @Param("userId") Integer userId,
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate);
+    
+    /**
+     * Get scan count by scan type within date range
+     */
+    @Query("SELECT COUNT(sh) FROM ScanHistory sh WHERE sh.userId = :userId AND sh.scanType = :scanType AND sh.scanTime >= :startDate AND sh.scanTime <= :endDate")
+    Long countByUserIdAndScanTypeAndDateRange(
+            @Param("userId") Integer userId,
+            @Param("scanType") ScanType scanType,
+            @Param("startDate") String startDate,
+            @Param("endDate") String endDate);
 } 

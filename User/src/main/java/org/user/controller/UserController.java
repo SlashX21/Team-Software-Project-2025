@@ -61,7 +61,8 @@ public class UserController {
         User userNew = userService.getUser(userId);
         return ResponseMessage.success(userNew);
     }
-    // 修改
+    
+    // edit user
     // put mapping
     @PutMapping // URL: localhost:8080/user/ method: put
     public ResponseMessage<User> edit(@Validated @RequestBody UserDto user){
@@ -69,8 +70,7 @@ public class UserController {
         return ResponseMessage.success(userNew);
     }
 
-    // 删除
-    // delete mapping
+    // delete user
     @DeleteMapping("/{userId}") // URL: localhost:8080/user/1 method: delete
     public ResponseMessage<User> delete(@PathVariable Integer userId){
         userService.delete(userId);
@@ -78,7 +78,7 @@ public class UserController {
     }
     
     /**
-     * Obtain user history records
+     * Obtain specific user's all history records
      */
     @GetMapping("/{userId}/history")
     public ResponseEntity<ResponseMessage<Map<String, Object>>> getUserHistory(
@@ -117,6 +117,9 @@ public class UserController {
         }
     }
 
+    /**
+     * Obtain specific user's history record by historyId
+     */
     @GetMapping("/{userId}/history/{historyId}")
     public ResponseEntity<ResponseMessage<UserHistoryResponseDto>> getUserHistoryById(
             @PathVariable Integer userId,
@@ -133,15 +136,24 @@ public class UserController {
         return ResponseEntity.ok(ResponseMessage.success(history));
     }
     
+    @DeleteMapping("/{userId}/history/{historyId}")
+    public ResponseEntity<ResponseMessage<String>> deleteUserHistoryById(
+            @PathVariable Integer userId,
+            @PathVariable String historyId) {
+        userHistoryService.deleteUserHistoryById(userId, historyId);
+        return ResponseEntity.ok(ResponseMessage.success("History record deleted successfully!"));
+    }
+
     /**
      * Get user history statistics
      */
-    @GetMapping("/{userId}/history/stats")
+    @GetMapping("/{userId}/history/statistics")
     public ResponseEntity<ResponseMessage<Map<String, Object>>> getUserHistoryStats(
-            @PathVariable Integer userId) {
+            @PathVariable Integer userId,
+            @RequestParam(defaultValue = "month") String period) {
         
         try {
-            Map<String, Object> stats = userHistoryService.getUserHistoryStats(userId);
+            Map<String, Object> stats = userHistoryService.getUserHistoryStats(userId, period);
             ResponseMessage<Map<String, Object>> response = new ResponseMessage<>(200, "Success", stats);
             return ResponseEntity.ok(response);
             
