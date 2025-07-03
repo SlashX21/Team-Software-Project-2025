@@ -15,19 +15,19 @@ public class Product {
 
     // "商品条码，全局唯一标识"
     @Id
-    @Column(name="bar_code")
+    @Column(name="barcode")
     private String barCode;
     // "商品名称, OCR匹配用"
-    @Column(name="product_name")
+    @Column(name="name")
     private String productName;
     // "品牌"
     @Column(name="brand")
     private String brand;
     // "成分列表，过敏原检测源"
-    @Column(name="ingredients")
+    @Column(name="ingredients", columnDefinition = "LONGTEXT")
     private String ingredients;
     // "过敏原信息，解析生成字典"
-    @Column(name="allergens")
+    @Column(name="allergens", columnDefinition = "LONGTEXT")
     private String allergens;
     // "能量值(焦耳)"
     @Column(name="energy_100g")
@@ -57,15 +57,28 @@ public class Product {
     // "商品类别，同类推荐关键"
     @Column(name="category")
     private String category ;
-    // "创建时间"
-    @Column(name="created_at")
-    private String createdAt;
-    // "更新时间"
-    @Column(name="updated_at")
-    private String updatedAt;
-
 
     
+    @Override
+    public String toString() {
+        return "Product{" +
+                "barCode='" + barCode + '\'' +
+                ", productName='" + productName + '\'' +
+                ", brand='" + brand + '\'' +
+                ", ingredients='" + ingredients + '\'' +
+                ", allergens='" + allergens + '\'' +
+                ", energy100g=" + energy100g +
+                ", energyKcal100g=" + energyKcal100g +
+                ", fat100g=" + fat100g +
+                ", saturatedFat100g=" + saturatedFat100g +
+                ", carbohydrates100g=" + carbohydrates100g +
+                ", sugars100g=" + sugars100g +
+                ", proteins100g=" + proteins100g +
+                ", servingSize='" + servingSize + '\'' +
+                ", category='" + category + '\'' +
+                '}';
+    }
+
 
     /**
      * @return String return the barCode
@@ -236,7 +249,7 @@ public class Product {
     }
 
     /**
-     * @return Character return the servingSize
+     * @return String return the servingSize
      */
     public String getServingSize() {
         return servingSize;
@@ -250,7 +263,7 @@ public class Product {
     }
 
     /**
-     * @return Character return the category
+     * @return String return the category
      */
     public String getCategory() {
         return category;
@@ -263,33 +276,4 @@ public class Product {
         this.category = category;
     }
 
-    /**
-     * @return String return the createdAt
-     */
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * @param createdAt the createdAt to set
-     */
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    /**
-     * @return String return the updatedAt
-     */
-    public String getUpdatedAt() {
-        return updatedAt;
-    }
-
-    /**
-     * @param updatedAt the updatedAt to set
-     */
-    public void setUpdatedAt(String updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
 }
-        

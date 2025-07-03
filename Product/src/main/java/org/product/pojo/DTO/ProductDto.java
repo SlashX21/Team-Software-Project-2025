@@ -45,13 +45,6 @@ public class ProductDto {
     @NotBlank(message = "Category cannot be empty")
     private String category;
 
-    // @NotBlank(message = "Created time cannot be empty")
-    private String createdAt;
-
-    // @NotBlank(message = "Updated time cannot be empty")
-    private String updatedAt;
-    
-
     @Override
     public String toString() {
         return "ProductDto{" +
@@ -69,8 +62,6 @@ public class ProductDto {
                 ", proteins100g='" + proteins100g + '\'' +
                 ", servingSize='" + servingSize + '\'' +
                 ", category='" + category + '\'' +
-                ", createdAt='" + createdAt + '\'' +
-                ", updatedAt='" + updatedAt + '\'' +
                 '}';
     }
 
@@ -271,33 +262,4 @@ public class ProductDto {
     public void setCategory(String category) {
         this.category = category;
     }
-
-    /**
-     * @return String return the createdAt
-     */
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * @param createdAt the createdAt to set
-     */
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    /**
-     * @return String return the updatedAt
-     */
-    public String getUpdatedAt() {
-        return updatedAt;
-    }
-
-    /**
-     * @param updatedAt the updatedAt to set
-     */
-    public void setUpdatedAt(String updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
 }

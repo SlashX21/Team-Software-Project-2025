@@ -43,9 +43,9 @@ public class ProductService implements IProductService{
         // System.out.println("Product.getProductName(): " + productDto.getProductName());
         // System.out.println("Product.getBarCode(): " + productDto.getBarCode());
 
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        productPojo.setCreatedAt(now.format(formatter));
+        // LocalDateTime now = LocalDateTime.now();
+        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // productPojo.setCreatedAt(now.format(formatter));
         
         return productRepository.save(productPojo);
     }
@@ -75,9 +75,9 @@ public class ProductService implements IProductService{
         // 更新现有产品的属性
         BeanUtils.copyProperties(product, existingProduct, "barCode", "createdAt");
 
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        existingProduct.setUpdatedAt(now.format(formatter));
+        // LocalDateTime now = LocalDateTime.now();
+        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // existingProduct.setUpdatedAt(now.format(formatter));
 
         // 保存更新后的产品
         return productRepository.save(existingProduct);

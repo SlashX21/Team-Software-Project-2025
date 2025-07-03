@@ -19,16 +19,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.user.service.IUserService;
+import org.user.service.IUserHistoryService;
+import org.user.pojo.DTO.UserHistoryResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @RestController //允许接口方法返回对象, 并且对象可以直接转换为json文本
 @RequestMapping("/user") // 这样子前端就可以使用 localhost:8080/user/**来访问
 public class UserController {
-
-    @Autowired
-    IUserService userService;
+    @Autowired IUserService userService;
+    @Autowired IUserHistoryService userHistoryService;
 
     // Register user
     @PostMapping // URL: localhost:8080/user/ method: post
@@ -67,5 +74,64 @@ public class UserController {
     public ResponseMessage<User> delete(@PathVariable Integer userId){
         userService.delete(userId);
         return ResponseMessage.success();
+    }
+    
+    /**
+     * Obtain user history records
+     */
+    @GetMapping("/{userId}/history")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> getUserHistory(
+            @PathVariable Integer userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int limit,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String range) {
+        
+        try {
+            // parameter validation
+            if (page < 1) page = 1;
+            if (limit < 1 || limit > 100) limit = 20;
+            
+            // get history records
+            Page<UserHistoryResponseDto> historyPage = userHistoryService.getUserHistory(
+                    userId, page, limit, search, type, range);
+            
+            // build response data
+            Map<String, Object> data = new HashMap<>();
+            data.put("items", historyPage.getContent());
+            data.put("totalCount", historyPage.getTotalElements());
+            data.put("currentPage", page);
+            data.put("totalPages", historyPage.getTotalPages());
+            data.put("hasMore", historyPage.hasNext());
+            
+            // build response
+            ResponseMessage<Map<String, Object>> response = new ResponseMessage<>(200, "Success", data);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            ResponseMessage<Map<String, Object>> errorResponse = new ResponseMessage<>(
+                    500, "Internal server error: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * Get user history statistics
+     */
+    @GetMapping("/{userId}/history/stats")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> getUserHistoryStats(
+            @PathVariable Integer userId) {
+        
+        try {
+            Map<String, Object> stats = userHistoryService.getUserHistoryStats(userId);
+            ResponseMessage<Map<String, Object>> response = new ResponseMessage<>(200, "Success", stats);
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            ResponseMessage<Map<String, Object>> errorResponse = new ResponseMessage<>(
+                    500, "Internal server error: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

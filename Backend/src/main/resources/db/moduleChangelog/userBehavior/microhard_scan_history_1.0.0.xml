@@ -5,8 +5,8 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <!-- create allergen table -->
-    <changeSet id="scan-history-create-table-1" author="YanhaoSun">
+    <!-- create scan_history table -->
+    <changeSet id="scan-history-create-table-2" author="YanhaoSun">
         <preConditions onFail="MARK_RAN">
             <not>
                 <tableExists tableName="scan_history"/>
@@ -53,12 +53,13 @@
         constraintName="fk_scan_history_user"
         onDelete="CASCADE"/>
 
-        <addForeignKeyConstraint
+        <!-- Temporarily disabled FK constraint to product table as it's in a different microservice -->
+        <!-- <addForeignKeyConstraint
         baseTableName="scan_history"
         baseColumnNames="barcode"
         referencedTableName="product"
         referencedColumnNames="barcode"
         constraintName="fk_scan_history_product"
-        onDelete="CASCADE"/>
+        onDelete="CASCADE"/> -->
     </changeSet>
 </databaseChangeLog>

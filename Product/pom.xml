@@ -41,16 +41,13 @@
 
   <build>
     <plugins>
-      <!-- 禁用Spring Boot插件的repackage目标，因为这是一个库模块 -->
+      <!-- enable Spring Boot plugin to support standalone startup -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>repackage</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
+        <configuration>
+          <mainClass>org.product.ProductApplication</mainClass>
+        </configuration>
       </plugin>
     </plugins>
   </build>
