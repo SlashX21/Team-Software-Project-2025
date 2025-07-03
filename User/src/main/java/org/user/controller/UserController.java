@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.user.service.IUserService;
 import org.user.service.IUserHistoryService;
 import org.user.pojo.DTO.UserHistoryResponseDto;
+import org.user.pojo.DTO.UserHistoryListDto;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -94,7 +95,7 @@ public class UserController {
             if (limit < 1 || limit > 100) limit = 20;
             
             // get history records
-            Page<UserHistoryResponseDto> historyPage = userHistoryService.getUserHistory(
+            Page<UserHistoryListDto> historyPage = userHistoryService.getUserHistory(
                     userId, page, limit, search, type, range);
             
             // build response data
@@ -114,6 +115,22 @@ public class UserController {
                     500, "Internal server error: " + e.getMessage(), null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @GetMapping("/{userId}/history/{historyId}")
+    public ResponseEntity<ResponseMessage<UserHistoryResponseDto>> getUserHistoryById(
+            @PathVariable Integer userId,
+            @PathVariable String historyId) {
+                UserHistoryResponseDto history;
+        try{
+            history = userHistoryService.getUserHistoryById(userId, historyId);
+        }
+        catch (Exception e){
+            ResponseMessage<UserHistoryResponseDto> errorResponse = new ResponseMessage<>(
+                    500, "Internal server error: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+        return ResponseEntity.ok(ResponseMessage.success(history));
     }
     
     /**
