@@ -1,6 +1,9 @@
 package org.user.pojo.DTO;
 
 import org.user.enums.Source;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
@@ -8,11 +11,12 @@ import jakarta.validation.constraints.Min;
 public class SugarRecordsDto {
     private Integer recordId;
 
-    @NotNull(message = "user_id can not be null")
+    // @NotNull(message = "user_id can not be null")
     private Integer userId; 
 
     private String foodName;
 
+    @JsonProperty("sugarAmount")
     @Min(value = 0, message = "sugar_amount_mg must be greater than or equal to 0")
     private Double sugarAmountMg;
 
@@ -21,7 +25,7 @@ public class SugarRecordsDto {
     
     private String consumedAt;
 
-    @NotBlank(message = "product_barcode can not be null")
+    // @NotBlank(message = "product_barcode can not be null")
     private String productBarcode;
 
     // obtain from Product table

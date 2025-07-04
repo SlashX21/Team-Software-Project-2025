@@ -10,7 +10,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@Table(name = "suagr_records")
+@Table(name = "sugar_records")
 @Entity
 public class SugarRecords {
     @Id

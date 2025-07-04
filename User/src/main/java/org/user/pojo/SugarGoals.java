@@ -11,7 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-@Table(name = "suagr_goals")
+@Table(name = "sugar_goals")
 @Entity
 public class SugarGoals {
     @Id
