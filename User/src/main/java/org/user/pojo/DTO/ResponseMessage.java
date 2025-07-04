@@ -18,9 +18,29 @@ public class ResponseMessage <T>{
         return new ResponseMessage(HttpStatus.OK.value(), "success!", data);
     }
 
+    // 
     public static <T>ResponseMessage<T> success(){
         return new ResponseMessage(HttpStatus.OK.value(), "success!", null);
     }
+
+
+
+    
+    public static ResponseMessage<String> error(String message){
+        return new ResponseMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(), message, null);
+
+    }
+
+    public static ResponseMessage<String> error(Integer code, String message){
+        return new ResponseMessage(code, message, null);
+
+    }
+
+    public static ResponseMessage<String> error(){
+        return new ResponseMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(), "System error, please contact adminstrator", null);
+
+    }
+
     public Integer getCode() {
         return code;
     }

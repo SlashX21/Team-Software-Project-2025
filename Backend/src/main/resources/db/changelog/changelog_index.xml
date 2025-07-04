@@ -5,12 +5,21 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <!-- 引用全局的属性文件 -->
-    <!-- 这个全局属性文件里面定义了所有子模块都遵循的规则, 比方说: 类型转换-->
+     <!-- Add global property file -->
+     <!-- This global property file defined all rules of all sub-modules must obey, e.g., type exchange -->
     <include file="classpath:db/changelog/changelog_global_property.xml" relativeToChangelogFile="false"/>
 
-    <!-- 直接引用各个业务模块的changeset文件，避免重复包含 -->
-    <include file="classpath:db/moduleChangelog/allergen/microhard_allergen_1.0.0.xml" relativeToChangelogFile="false"/>
-    <include file="classpath:db/moduleChangelog/product/microhard_product_1.0.0.xml" relativeToChangelogFile="false"/>
-    <include file="classpath:db/moduleChangelog/user/microhard_user_1.0.0.xml" relativeToChangelogFile="false"/>
+     <!-- invoke changeset files of all sub-modules, avoid duplication -->
+    <!-- 注意：严格按照外键依赖顺序执行，避免"Failed to open the referenced table"错误 -->
+    
+    <!-- 第一层：基础表（无外键依赖） -->
+    <include file="classpath:db/moduleChangelog/user_index.xml" relativeToChangelogFile="false"/>
+    <include file="classpath:db/moduleChangelog/product_index.xml" relativeToChangelogFile="false"/>
+    
+    <!-- 第二层：一级依赖表（引用基础表） -->
+    <include file="classpath:db/moduleChangelog/allergen_index.xml" relativeToChangelogFile="false"/>
+    <include file="classpath:db/moduleChangelog/healthManagement_index.xml" relativeToChangelogFile="false"/>
+    
+    <!-- 第三层：二级依赖表（引用一级依赖表，需要purchase_record先创建） -->
+    <include file="classpath:db/moduleChangelog/userBehavior_index.xml" relativeToChangelogFile="false"/>
 </databaseChangeLog>

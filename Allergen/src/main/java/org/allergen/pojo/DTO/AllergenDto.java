@@ -25,7 +25,7 @@ public class AllergenDto {
     
     @Override
     public String toString() {
-        return "UserDto{" +
+        return "AllergenDto{" +
                 "Id ='" + id + '\'' +
                 ", allergenname='" + name + '\'' +
                 ", isCommon ='" + isCommon + '\'' +

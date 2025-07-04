@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create scan_history table -->
+    <changeSet id="scan-history-create-table-2" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="scan_history"/>
+            </not>
+        </preConditions>
+        <createTable tableName="scan_history">
+            <column name="scan_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="barcode" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="scan_time" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="location" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="allergen_detected" type="${type.boolean}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="scan_result" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="action_taken" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="scan_type" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="recommendation_response" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+        baseTableName="scan_history"
+        baseColumnNames="user_id"
+        referencedTableName="user"
+        referencedColumnNames="user_id"
+        constraintName="fk_scan_history_user"
+        onDelete="CASCADE"/>
+
+        <!-- Temporarily disabled FK constraint to product table as it's in a different microservice -->
+        <!-- <addForeignKeyConstraint
+        baseTableName="scan_history"
+        baseColumnNames="barcode"
+        referencedTableName="product"
+        referencedColumnNames="barcode"
+        constraintName="fk_scan_history_product"
+        onDelete="CASCADE"/> -->
+    </changeSet>
+</databaseChangeLog>

@@ -24,15 +24,19 @@ public class Allergen {
     @Column(name = "is_common")
     private boolean isCommon;
 
-    @Column(name="description")
+    @Column(name="description", columnDefinition = "LONGTEXT")
     private String description;
 
-    @Column(name="created_time")
-    private String createdTime;
-
-    // @Column(name="updated_time")
-    // private String updatedTime;
-
+    @Override
+    public String toString() {
+        return "Allergen{" +
+                "allergenId=" + allergenId +
+                ", name='" + name + '\'' +
+                ", category='" + category + '\'' +
+                ", isCommon=" + isCommon +
+                ", description='" + description + '\'' +
+                '}';
+    }
 
     /**
      * @return Integer return the allergenId
@@ -102,20 +106,6 @@ public class Allergen {
      */
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    /**
-     * @return String return the createdTime
-     */
-    public String getCreatedTime() {
-        return createdTime;
-    }
-
-    /**
-     * @param createdTime the createdTime to set
-     */
-    public void setCreatedTime(String createdTime) {
-        this.createdTime = createdTime;
     }
 
 }

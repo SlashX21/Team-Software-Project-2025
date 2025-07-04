@@ -26,9 +26,9 @@ public class AllergenService implements IAllergenService {
         Allergen allergenPojo = new Allergen();
         BeanUtils.copyProperties(allergenDto, allergenPojo);
 
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        allergenPojo.setCreatedTime(now.format(formatter));
+        // LocalDateTime now = LocalDateTime.now();
+        // DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        // allergenPojo.setCreatedTime(now.format(formatter));
 
         return allergenRepository.save(allergenPojo);
     }

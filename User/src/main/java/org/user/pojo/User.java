@@ -20,7 +20,7 @@ public class User {
     @Column(name="user_id")
     private Integer userId;
 
-    @Column(name="user_name")
+    @Column(name="username")
     private String userName;
 
     @Column(name="email", nullable = true)
@@ -62,18 +62,55 @@ public class User {
     @Column(name="daily_fat_target")
     private Float dailyFatTarget;
 
-    @Column(name="created_time")
+    @Column(name="date_of_birth", columnDefinition = "DATE")
+    private String date_of_birth;
+
+    @Column(name="created_at", columnDefinition = "DATETIME")
     private String createdTime;
 
+    @Column(name="updated_at", columnDefinition = "DATETIME")
+    private String updatedTime;
+
+    
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "userId=" + userId +
+                ", username='" + userName + '\'' +
+                ", email='" + email + '\'' +
+                ", passwordHash='" + passwordHash + '\'' +
+                ", age=" + age +
+                ", gender=" + gender +
+                ", heightCm=" + heightCm +
+                ", weightKg=" + weightKg +
+                ", activityLevel=" + activityLevel +
+                ", nutritionGoal=" + nutritionGoal +
+                ", dailyCaloriesTarget=" + dailyCaloriesTarget +
+                ", dailyProteinTarget=" + dailyProteinTarget +
+                ", dailyCarbTarget=" + dailyCarbTarget +
+                ", dailyFatTarget=" + dailyFatTarget +
+                ", date_of_birth='" + date_of_birth + '\'' +
+                ", createdTime='" + createdTime + '\'' +
+                ", updatedTime='" + updatedTime + '\'' +
+                '}';
+    }
+
+    /**
+     * @return Integer return the userId
+     */
     public Integer getUserId() {
         return userId;
     }
 
+    /**
+     * @param userId the userId to set
+     */
     public void setUserId(Integer userId) {
         this.userId = userId;
     }
 
-       /**
+    /**
      * @return String return the userName
      */
     public String getUserName() {
@@ -87,53 +124,18 @@ public class User {
         this.userName = userName;
     }
 
+    /**
+     * @return String return the email
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @param email the email to set
+     */
     public void setEmail(String email) {
         this.email = email;
-    }
-    
-    public String getPassword() {
-        return passwordHash;
-    }
-
-    public void setPassword(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
-
-
-    public String getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(String createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public Gender getGender() {
-        return gender;
-    }
-
-    public void setGender(Gender gender) {
-        this.gender = gender;
-    }
-
-    public ActivityLevel getActivityLevel() {
-        return activityLevel;
-    }
-
-    public void setActivityLevel(ActivityLevel activityLevel) {
-        this.activityLevel = activityLevel;
-    }
-
-    public NutritionGoal getNutritionGoal() {
-        return nutritionGoal;
-    }
-
-    public void setNutritionGoal(NutritionGoal nutritionGoal) {
-        this.nutritionGoal = nutritionGoal;
     }
 
     /**
@@ -165,6 +167,20 @@ public class User {
     }
 
     /**
+     * @return Gender return the gender
+     */
+    public Gender getGender() {
+        return gender;
+    }
+
+    /**
+     * @param gender the gender to set
+     */
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    /**
      * @return Integer return the heightCm
      */
     public Integer getHeightCm() {
@@ -190,6 +206,34 @@ public class User {
      */
     public void setWeightKg(Float weightKg) {
         this.weightKg = weightKg;
+    }
+
+    /**
+     * @return ActivityLevel return the activityLevel
+     */
+    public ActivityLevel getActivityLevel() {
+        return activityLevel;
+    }
+
+    /**
+     * @param activityLevel the activityLevel to set
+     */
+    public void setActivityLevel(ActivityLevel activityLevel) {
+        this.activityLevel = activityLevel;
+    }
+
+    /**
+     * @return NutritionGoal return the nutritionGoal
+     */
+    public NutritionGoal getNutritionGoal() {
+        return nutritionGoal;
+    }
+
+    /**
+     * @param nutritionGoal the nutritionGoal to set
+     */
+    public void setNutritionGoal(NutritionGoal nutritionGoal) {
+        this.nutritionGoal = nutritionGoal;
     }
 
     /**
@@ -248,18 +292,46 @@ public class User {
         this.dailyFatTarget = dailyFatTarget;
     }
 
-
-    @Override
-    public String toString() {
-        return "User{" +
-                "userId=" + userId +
-                ", username='" + userName + '\'' +
-                ", passwordHash='" + passwordHash + '\'' +
-                ", email='" + email + '\'' +
-                ", gender=" + gender +
-                ", activityLevel=" + activityLevel +
-                ", nutritionGoal=" + nutritionGoal +
-                ", createdTime='" + createdTime + '\'' +
-                '}';
+    /**
+     * @return String return the date_of_birth
+     */
+    public String getDate_of_birth() {
+        return date_of_birth;
     }
+
+    /**
+     * @param date_of_birth the date_of_birth to set
+     */
+    public void setDate_of_birth(String date_of_birth) {
+        this.date_of_birth = date_of_birth;
+    }
+
+    /**
+     * @return String return the createdTime
+     */
+    public String getCreatedTime() {
+        return createdTime;
+    }
+
+    /**
+     * @param createdTime the createdTime to set
+     */
+    public void setCreatedTime(String createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    /**
+     * @return String return the updatedTime
+     */
+    public String getUpdatedTime() {
+        return updatedTime;
+    }
+
+    /**
+     * @param updatedTime the updatedTime to set
+     */
+    public void setUpdatedTime(String updatedTime) {
+        this.updatedTime = updatedTime;
+    }
+
 }

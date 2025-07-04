@@ -21,6 +21,9 @@ public class ResponseMessage <T>{
     public static <T>ResponseMessage<T> success(){
         return new ResponseMessage(HttpStatus.OK.value(), "success!", null);
     }
+    public static <T>ResponseMessage<T> success(String message){
+        return new ResponseMessage(HttpStatus.OK.value(), message, null);
+    }
     public Integer getCode() {
         return code;
     }

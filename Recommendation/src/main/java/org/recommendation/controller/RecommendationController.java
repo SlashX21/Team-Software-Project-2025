@@ -167,16 +167,37 @@ public class RecommendationController {
     /**
      * 购买商品DTO
      */
+    // public static class PurchasedItem {
+    //     private String barcode;
+    //     private Integer quantity;
+        
+    //     public String getBarcode() {
+    //         return barcode;
+    //     }
+        
+    //     public void setBarcode(String barcode) {
+    //         this.barcode = barcode;
+    //     }
+        
+    //     public Integer getQuantity() {
+    //         return quantity;
+    //     }
+        
+    //     public void setQuantity(Integer quantity) {
+    //         this.quantity = quantity;
+    //     }
+    // }
+
     public static class PurchasedItem {
-        private String barcode;
+        private String productname;
         private Integer quantity;
         
-        public String getBarcode() {
-            return barcode;
+        public String getProduct() {
+            return productname;
         }
         
-        public void setBarcode(String barcode) {
-            this.barcode = barcode;
+        public void setProductName(String productname) {
+            this.productname = productname;
         }
         
         public Integer getQuantity() {
