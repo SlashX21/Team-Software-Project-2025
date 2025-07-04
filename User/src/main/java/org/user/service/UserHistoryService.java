@@ -745,14 +745,14 @@ public class UserHistoryService implements IUserHistoryService {
         }
         
         try {
-            // 尝试解析完整的日期时间格式
+            // try to parse the full date time format
             if (scanTime.contains(" ")) {
                 return scanTime.split(" ")[0];
             }
-            // 如果已经是日期格式，直接返回
+            // if already in date format, return directly
             return scanTime;
         } catch (Exception e) {
-            // 如果解析失败，返回当前日期
+            // if parse failed, return current date
             return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         }
     }
