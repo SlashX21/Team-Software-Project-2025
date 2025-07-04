@@ -36,6 +36,11 @@ public class UserService implements IUserService{
     // register user
     @Override
     public User add(UserDto user) {
+        User existingUser = userRepository.findByUserName(user.getUserName());
+        if (existingUser == null) {
+            throw new IllegalArgumentException("Error: user name already exists.");
+        }
+
         User userPojo = new User();
         // 把user中的数据复制到userPojo里面
         BeanUtils.copyProperties(user, userPojo);
