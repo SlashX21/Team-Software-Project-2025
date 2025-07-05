@@ -7,8 +7,8 @@ public class ProductSearchDto {
     private String category;
     private Float energyKcal100g;
     private Float sugars100g;
-    private Double matchScore;
     private Float proteins100g;
+    private Double matchScore;
     
     // constructors
     public ProductSearchDto() {}
@@ -21,8 +21,8 @@ public class ProductSearchDto {
         this.category = category;
         this.energyKcal100g = energyKcal100g;
         this.sugars100g = sugars100g;
-        this.matchScore = matchScore;
         this.proteins100g = proteins100g;
+        this.matchScore = matchScore;
     }
     
     // getters and setters
@@ -73,7 +73,7 @@ public class ProductSearchDto {
     public void setSugars100g(Float sugars100g) {
         this.sugars100g = sugars100g;
     }
-
+    
     public Float getProteins100g() {
         return proteins100g;
     }

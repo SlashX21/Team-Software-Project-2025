@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="create-product-preference-table" author="microhard">
+        <createTable tableName="product_preference">
+            <column name="preference_id" type="INT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bar_code" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preference_type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="add-product-preference-indexes" author="microhard">
+        <createIndex indexName="idx_product_preference_user_id" tableName="product_preference">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex indexName="idx_product_preference_bar_code" tableName="product_preference">
+            <column name="bar_code"/>
+        </createIndex>
+        <createIndex indexName="idx_product_preference_user_bar_code" tableName="product_preference">
+            <column name="user_id"/>
+            <column name="bar_code"/>
+        </createIndex>
+        <createIndex indexName="idx_product_preference_type" tableName="product_preference">
+            <column name="preference_type"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="add-product-preference-foreign-keys" author="microhard">
+        <addForeignKeyConstraint
+                baseTableName="product_preference"
+                baseColumnNames="user_id"
+                constraintName="fk_product_preference_user"
+                referencedTableName="user"
+                referencedColumnNames="user_id"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+                
+        <addForeignKeyConstraint
+                baseTableName="product_preference"
+                baseColumnNames="bar_code"
+                constraintName="fk_product_preference_product"
+                referencedTableName="product"
+                referencedColumnNames="barcode"
+                onDelete="CASCADE"
+                onUpdate="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="add-product-preference-unique-constraint" author="microhard">
+        <addUniqueConstraint
+                tableName="product_preference"
+                columnNames="user_id, bar_code"
+                constraintName="uk_product_preference_user_product"/>
+    </changeSet>
+
+</databaseChangeLog> 
