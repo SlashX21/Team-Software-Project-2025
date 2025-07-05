@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
 export "FLUTTER_ROOT=/Users/200ok/Desktop/app/flutter"
-export "FLUTTER_APPLICATION_PATH=/Users/200ok/Team- Project/frontend/grocery_guardian_app"
+export "FLUTTER_APPLICATION_PATH=/Users/200ok/GG-version-7.1/frontend/grocery_guardian_app"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib/main.dart"
 export "FLUTTER_BUILD_DIR=build"
