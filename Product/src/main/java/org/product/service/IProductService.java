@@ -2,6 +2,8 @@ package org.product.service;
 
 import org.product.pojo.Product;
 import org.product.pojo.DTO.ProductDto;
+import org.product.pojo.DTO.ProductSearchDto;
+import org.product.pojo.DTO.PagedResponseDto;
 
 public interface IProductService {
     /**
@@ -32,4 +34,33 @@ public interface IProductService {
      * @return
      */
     void delete(String barCode);
+    
+    /**
+     * search products by name with pagination
+     * @param productName product name to search
+     * @param page page number (0-based)
+     * @param size page size
+     * @return paged search results
+     */
+    PagedResponseDto<ProductSearchDto> searchProductsByName(String productName, Integer page, Integer size);
+    
+    /**
+     * get products by category with pagination
+     * @param category product category
+     * @param page page number (0-based)
+     * @param size page size
+     * @return paged results by category
+     */
+    PagedResponseDto<ProductSearchDto> getProductsByCategory(String category, Integer page, Integer size);
+    
+    /**
+     * filter products by nutrition criteria
+     * @param maxCalories maximum calories per 100g (optional)
+     * @param maxSugar maximum sugar per 100g (optional)
+     * @param minProtein minimum protein per 100g (optional)
+     * @param page page number (0-based)
+     * @param size page size
+     * @return paged filtered results
+     */
+    PagedResponseDto<ProductSearchDto> filterProductsByNutrition(Float maxCalories, Float maxSugar, Float minProtein, Integer page, Integer size);
 }

@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create sugar_intake_history table -->
+    <changeSet id="sugar-intake-history-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="sugar_intake_history"/>
+            </not>
+        </preConditions>
+        <createTable tableName="sugar_intake_history">
+            <column name="intake_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="food_name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sugar_amount_mg" type="${type.float}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="intake_time" type="${type.datetime}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_type" type="${type.string}" defaultValue="manual">
+                <constraints nullable="false"/>
+            </column>
+            <column name="barcode" type="VARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="serving_size" type="VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- add foreign key constraint for user_id -->
+    <changeSet id="sugar-intake-history-add-foreign-key-user-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <tableExists tableName="user"/>
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_sugar_intake_history_user_id"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="sugar_intake_history"
+                baseColumnNames="user_id"
+                constraintName="fk_sugar_intake_history_user_id"
+                referencedTableName="user"
+                referencedColumnNames="user_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- add foreign key constraint for barcode (optional, references product table) -->
+    <changeSet id="sugar-intake-history-add-foreign-key-product-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <tableExists tableName="product"/>
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_sugar_intake_history_barcode"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="sugar_intake_history"
+                baseColumnNames="barcode"
+                constraintName="fk_sugar_intake_history_barcode"
+                referencedTableName="product"
+                referencedColumnNames="barcode"
+                onDelete="SET NULL"/>
+    </changeSet>
+
+    <!-- add index for user_id -->
+    <changeSet id="sugar-intake-history-add-index-user-id-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <not>
+                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add index for intake_time -->
+    <changeSet id="sugar-intake-history-add-index-intake-time-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <not>
+                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_intake_time"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_intake_time">
+            <column name="intake_time"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add composite index for user_id and intake_time -->
+    <changeSet id="sugar-intake-history-add-composite-index-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <not>
+                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_time"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_time">
+            <column name="user_id"/>
+            <column name="intake_time"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add check constraint for source_type -->
+    <changeSet id="sugar-intake-history-add-check-constraint-source-type-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE sugar_intake_history 
+            ADD CONSTRAINT chk_source_type 
+            CHECK (source_type IN ('scan', 'manual', 'receipt'))
+        </sql>
+        <rollback>
+            ALTER TABLE sugar_intake_history DROP CONSTRAINT chk_source_type
+        </rollback>
+    </changeSet>
+
+    <!-- add check constraint for sugar_amount_mg -->
+    <changeSet id="sugar-intake-history-add-check-constraint-sugar-amount-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE sugar_intake_history 
+            ADD CONSTRAINT chk_sugar_amount_mg 
+            CHECK (sugar_amount_mg &gt;= 0)
+        </sql>
+        <rollback>
+            ALTER TABLE sugar_intake_history DROP CONSTRAINT chk_sugar_amount_mg
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog> 

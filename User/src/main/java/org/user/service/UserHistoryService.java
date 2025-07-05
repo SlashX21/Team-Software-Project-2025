@@ -11,13 +11,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.user.enums.ScanType;
+import org.user.enums.ActionTaken;
 import org.user.pojo.DTO.UserHistoryResponseDto;
 import org.user.pojo.DTO.UserHistoryListDto;
 import org.user.pojo.ScanHistory;
 import org.user.repository.ScanHistoryRepository;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,7 +52,7 @@ public class UserHistoryService implements IUserHistoryService {
         Page<ScanHistory> scanHistoryPage = scanHistoryRepository.findUserHistoryWithFilters(
                 userId, search, scanType, startDate, endDate, pageable);
         
-        System.out.println("scanHistoryPage content: " + scanHistoryPage.getContent());
+        // System.out.println("scanHistoryPage content: " + scanHistoryPage.getContent());
         // convert response DTO
         List<UserHistoryListDto> responseDtos = scanHistoryPage.getContent()
                 .stream()
@@ -185,6 +188,10 @@ public class UserHistoryService implements IUserHistoryService {
         dto.setScanType(scanHistory.getScanType());
         dto.setCreatedAt(scanHistory.getScanTime());
         dto.setBarcode(scanHistory.getBarcode());
+        
+        // add allergen detected and user action information
+        dto.setAllergenDetected(scanHistory.isAllergenDetected());
+        dto.setActionTaken(scanHistory.getActionTaken());
         
         // query product table to obtain product information directly
         ProductInfo productInfo = getProductInfoByBarcode(scanHistory.getBarcode());
@@ -694,7 +701,104 @@ public class UserHistoryService implements IUserHistoryService {
         // simplified implementation: simulate health score calculation based on barcode
         return 85.0 + (barcode.hashCode() % 15);
     }
+    public String getBrandFromBarcode(String barcode) {
+        ProductInfo productInfo = getProductInfoByBarcode(barcode);
+        if (productInfo != null) {
+            return productInfo.brand;
+        }
+        return null;
+    }
+
+    @Override
+    public Integer saveScanHistory(Integer userId, String barcode, String scanTime, String location, 
+                                  Boolean allergenDetected, String actionTaken) {
+        // create scan history entity
+        ScanHistory scanHistory = new ScanHistory();
+        scanHistory.setUserId(userId);
+        scanHistory.setBarcode(barcode);
+        scanHistory.setScanTime(convertIsoToDateTime(scanTime));
+        scanHistory.setLocation(location);
+        scanHistory.setAllergenDetected(allergenDetected != null ? allergenDetected : false);
+        
+        // convert actionTaken string to enum
+        ActionTaken actionTakenEnum;
+        try {
+            if (actionTaken == null || actionTaken.isEmpty()) {
+                actionTakenEnum = ActionTaken.NONE;
+            } else {
+                // map common action values to enum values
+                switch (actionTaken.toLowerCase()) {
+                    case "avoided":
+                        actionTakenEnum = ActionTaken.AVOIDED;
+                        break;
+                    case "remove":
+                        actionTakenEnum = ActionTaken.REMOVE;
+                        break;
+                    case "report":
+                        actionTakenEnum = ActionTaken.REPORT;
+                        break;
+                    case "none":
+                    default:
+                        actionTakenEnum = ActionTaken.NONE;
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            actionTakenEnum = ActionTaken.NONE;
+        }
+        scanHistory.setActionTaken(actionTakenEnum);
+        
+        // set scan type as BARCODE by default
+        scanHistory.setScanType(ScanType.BARCODE);
+        
+        // set scan result as empty JSON for now
+        scanHistory.setScanResult("{}");
+        
+        // save to database
+        ScanHistory savedScanHistory = scanHistoryRepository.save(scanHistory);
+        
+        return savedScanHistory.getScanId();
+    }
+    /**
+     * convert datetime string to ISO 8601 format
+     */
+    private String convertToIsoDateTime(String dateTimeStr) {
+        if (dateTimeStr == null || dateTimeStr.isEmpty()) {
+            return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+        }
+        
+        try {
+            // assume input format is "yyyy-MM-dd HH:mm:ss"
+            LocalDateTime dateTime = LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+        } catch (Exception e) {
+            // if parsing fails, return current time
+            return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"));
+        }
+    }
     
+    /**
+     * convert ISO 8601 format to MySQL DATETIME format
+     */
+    private String convertIsoToDateTime(String isoDateTime) {
+        try {
+            // try to parse ISO 8601 format (e.g. 2024-01-15T16:30:00Z)
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(isoDateTime);
+            LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+            return localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (DateTimeParseException e) {
+            try {
+                // try to parse simple ISO format (e.g. 2024-01-15T16:30:00)
+                LocalDateTime localDateTime = LocalDateTime.parse(isoDateTime);
+                return localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (DateTimeParseException e2) {
+                // if both parsing fail, return current time
+                return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            }
+        }
+    }
+
+
     /**
      * create nutrition summary(simplified version)
      * 

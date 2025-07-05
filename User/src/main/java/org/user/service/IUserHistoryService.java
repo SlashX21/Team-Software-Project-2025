@@ -8,15 +8,15 @@ import org.user.enums.ScanType;
 public interface IUserHistoryService {
     
     /**
-     * 获取用户历史记录列表
+     * obtain user history list
      * 
-     * @param userId 用户ID
-     * @param page 页码（从1开始）
-     * @param limit 每页数量
-     * @param search 搜索关键词（可选）
-     * @param type 筛选类型（可选）- 'barcode' 或 'receipt'
-     * @param range 时间范围（可选）- 'week', 'month', 'year'
-     * @return 分页的用户历史记录
+     * @param userId user id
+     * @param page page number (start from 1)
+     * @param limit number of records per page
+     * @param search search keyword (optional)
+     * @param type filter type (optional) - 'barcode' or 'receipt'
+     * @param range time range (optional) - 'week', 'month', 'year'
+     * @return paginated user history list
      */
     Page<UserHistoryListDto> getUserHistory(
             Integer userId, 
@@ -51,4 +51,26 @@ public interface IUserHistoryService {
      * @param historyId history id
      */
     void deleteUserHistoryById(Integer userId, String historyId);
+
+    /**
+     * get brand from barcode
+     * 
+     * @param barcode barcode
+     * @return brand
+     */
+    String getBrandFromBarcode(String barcode);
+
+    /**
+     * save scan history record
+     * 
+     * @param userId user id
+     * @param barcode barcode
+     * @param scanTime scan time
+     * @param location location
+     * @param allergenDetected allergen detected
+     * @param actionTaken action taken
+     * @return scan id
+     */
+    Integer saveScanHistory(Integer userId, String barcode, String scanTime, String location, 
+                           Boolean allergenDetected, String actionTaken);
 } 

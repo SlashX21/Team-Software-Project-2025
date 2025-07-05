@@ -1,9 +1,10 @@
 package org.user.enums;
 
 public enum ActionTaken {
-    NONE("无"),
-    REMOVE("移除"),
-    REPORT("报告");
+    AVOIDED("avoided"),
+    NONE("none"),
+    REMOVE("remove"),
+    REPORT("report");
 
     private final String description;
 

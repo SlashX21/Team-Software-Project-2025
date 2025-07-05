@@ -9,6 +9,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 @Entity
 @Table(name = "user_allergen")
@@ -25,6 +27,7 @@ public class UserAllergen {
     private Integer allergenId;
 
     @Column(name = "severity_level")
+    @Enumerated(EnumType.STRING)
     private SeverityLevel severityLevel;
 
     @Column(name = "confirmed")
