@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @Transactional
@@ -69,11 +70,10 @@ public class AllergenService implements IAllergenService {
     }
 
     // 获取所有过敏原
-    // public List<AllergenDto> getAllAllergens() {
-    //     return allergenRepository.findAll().stream()
-    //         .map(this::convertToDto)
-    //         .collect(Collectors.toList());
-    // }
+    @Override
+    public List<Allergen> getAllAllergens() {
+        return allergenRepository.findAll();
+    }
 
     // 根据名称搜索过敏原
     // public List<AllergenDto> searchByName(String name) {

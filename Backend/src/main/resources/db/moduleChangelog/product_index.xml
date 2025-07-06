@@ -8,4 +8,5 @@
     <!-- 引用全局的属性文件 -->
     <!-- 这个全局属性文件里面定义了所有子模块都遵循的规则, 比方说: 类型转换-->
     <include file="classpath:db/moduleChangelog/product/microhard_product_1.0.0.xml"></include>
+    <include file="classpath:db/moduleChangelog/product/microhard_product_preference_1.0.0.xml"></include>
 </databaseChangeLog>

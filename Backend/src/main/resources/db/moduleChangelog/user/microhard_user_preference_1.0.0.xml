@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create user_preference table -->
+    <changeSet id="user-preference-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="user_preference"/>
+            </not>
+        </preConditions>
+        <createTable tableName="user_preference">
+            <column name="preference_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_low_sugar" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_low_fat" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_high_protein" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_low_sodium" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_organic" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="prefer_low_calorie" type="${type.boolean}" defaultValue="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preference_source" type="${type.string}" defaultValue="USER_MANUAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inference_confidence" type="${type.decimal}" defaultValue="0.0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="${type.int}" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${type.datetime}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="${type.datetime}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- add foreign key constraint -->
+    <changeSet id="user-preference-add-foreign-key-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+            <tableExists tableName="user"/>
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_user_preference_user_id"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="user_preference"
+                baseColumnNames="user_id"
+                constraintName="fk_user_preference_user_id"
+                referencedTableName="user"
+                referencedColumnNames="user_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- add unique constraint for user_id -->
+    <changeSet id="user-preference-add-unique-constraint-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+        </preConditions>
+        <addUniqueConstraint
+                tableName="user_preference"
+                columnNames="user_id"
+                constraintName="uk_user_preference_user_id"/>
+    </changeSet>
+
+    <!-- add index for preference_source -->
+    <changeSet id="user-preference-add-index-preference-source-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+            <not>
+                <indexExists tableName="user_preference" indexName="idx_user_preference_source"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="user_preference" indexName="idx_user_preference_source">
+            <column name="preference_source"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add index for version -->
+    <changeSet id="user-preference-add-index-version-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+            <not>
+                <indexExists tableName="user_preference" indexName="idx_user_preference_version"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="user_preference" indexName="idx_user_preference_version">
+            <column name="user_id"/>
+            <column name="version"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add check constraint for preference_source -->
+    <changeSet id="user-preference-add-check-constraint-source-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE user_preference 
+            ADD CONSTRAINT chk_preference_source 
+            CHECK (preference_source IN ('USER_MANUAL', 'SYSTEM_INFERRED', 'MIXED'))
+        </sql>
+        <rollback>
+            ALTER TABLE user_preference DROP CONSTRAINT chk_preference_source
+        </rollback>
+    </changeSet>
+
+    <!-- add check constraint for inference_confidence -->
+    <changeSet id="user-preference-add-check-constraint-confidence-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="user_preference"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE user_preference 
+            ADD CONSTRAINT chk_inference_confidence 
+            CHECK (inference_confidence &gt;= 0.0 AND inference_confidence &lt;= 1.0)
+        </sql>
+        <rollback>
+            ALTER TABLE user_preference DROP CONSTRAINT chk_inference_confidence
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog> 

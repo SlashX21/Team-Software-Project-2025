@@ -28,6 +28,13 @@
       <version>0.0.1-SNAPSHOT</version>
     </dependency>
     
+    <!-- 添加对Allergen模块的依赖 -->
+    <dependency>
+      <groupId>MicroHard_2025</groupId>
+      <artifactId>Allergen</artifactId>
+      <version>0.0.1-SNAPSHOT</version>
+    </dependency>
+    
     <!-- 继承父项目的依赖，这里可以添加模块特有的依赖 -->
     <dependency>
       <groupId>junit</groupId>

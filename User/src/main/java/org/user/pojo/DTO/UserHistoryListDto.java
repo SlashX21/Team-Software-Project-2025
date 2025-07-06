@@ -1,6 +1,7 @@
 package org.user.pojo.DTO;
 
 import org.user.enums.ScanType;
+import org.user.enums.ActionTaken;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class UserHistoryListDto {
@@ -25,6 +26,12 @@ public class UserHistoryListDto {
     
     @JsonProperty("recommendationCount")
     private Integer recommendationCount;
+    
+    @JsonProperty("allergenDetected")
+    private Boolean allergenDetected;
+    
+    @JsonProperty("actionTaken")
+    private ActionTaken actionTaken;
     
     private SummaryDto summary;
     
@@ -86,6 +93,8 @@ public class UserHistoryListDto {
                 ", barcode='" + barcode + '\'' +
                 ", healthScore=" + healthScore +
                 ", recommendationCount=" + recommendationCount +
+                ", allergenDetected=" + allergenDetected +
+                ", actionTaken=" + actionTaken +
                 ", summary=" + summary +
                 '}';
     }
@@ -161,5 +170,21 @@ public class UserHistoryListDto {
 
     public void setSummary(SummaryDto summary) {
         this.summary = summary;
+    }
+
+    public Boolean getAllergenDetected() {
+        return allergenDetected;
+    }
+
+    public void setAllergenDetected(Boolean allergenDetected) {
+        this.allergenDetected = allergenDetected;
+    }
+
+    public ActionTaken getActionTaken() {
+        return actionTaken;
+    }
+
+    public void setActionTaken(ActionTaken actionTaken) {
+        this.actionTaken = actionTaken;
     }
 } 
