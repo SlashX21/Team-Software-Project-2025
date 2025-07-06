@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Table(name = "scan_history")
 @Entity
@@ -50,6 +51,9 @@ public class ScanHistory {
     @Column(name="recommendation_response", columnDefinition = "LONGTEXT")
     private String recommendationResponse;
 
+    @Column(name="created_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime createdAt;
+
     @Override
     public String toString() {
         return "ScanHistory{" +
@@ -63,6 +67,7 @@ public class ScanHistory {
                 ", actionTaken=" + actionTaken +
                 ", scanType=" + scanType +
                 ", recommendationResponse='" + recommendationResponse + '\'' +
+                ", createdAt=" + createdAt +
                 '}';
     }
 
@@ -204,6 +209,20 @@ public class ScanHistory {
      */
     public void setRecommendationResponse(String recommendationResponse) {
         this.recommendationResponse = recommendationResponse;
+    }
+
+    /**
+     * @return LocalDateTime return the createdAt
+     */
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    /**
+     * @param createdAt the createdAt to set
+     */
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
 }

@@ -11,11 +11,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 })
 @EnableJpaRepositories(basePackages = {
     "com.demo.backend", 
-    "org.user.repository", "org.product.repository", "org.allergen.repository"
+    "org.user.repository", "org.product.repository", "org.allergen.repository", "org.recommendation.repository"
 })
 @EntityScan(basePackages = {
     "com.demo.backend", 
-    "org.user.pojo", "org.product.pojo", "org.allergen.pojo"
+    "org.user.pojo", "org.product.pojo", "org.allergen.pojo", "org.recommendation.pojo"
 })
 public class SpringbootDemoApplication {
     public static void main(String[] args) {

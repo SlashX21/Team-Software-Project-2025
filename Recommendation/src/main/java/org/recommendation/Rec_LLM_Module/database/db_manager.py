@@ -576,12 +576,12 @@ class MySQLAdapter(DatabaseAdapter):
         try:
             from sqlalchemy import text
             query = text("""
-            SELECT bar_code, product_name, brand, ingredients, allergens,
+            SELECT barcode as bar_code, name as product_name, brand, ingredients, allergens,
                    energy_100g, energy_kcal_100g, fat_100g, saturated_fat_100g,
                    carbohydrates_100g, sugars_100g, proteins_100g,
-                   serving_size, category, created_at, updated_at
+                   serving_size, category
             FROM product 
-            WHERE bar_code = :barcode
+            WHERE barcode = :barcode
             """)
             
             result = self.connection.execute(query, {"barcode": barcode})
@@ -600,12 +600,12 @@ class MySQLAdapter(DatabaseAdapter):
         try:
             from sqlalchemy import text
             query = text("""
-            SELECT bar_code, product_name, brand, category,
+            SELECT barcode as bar_code, name as product_name, brand, category,
                    energy_kcal_100g, proteins_100g, fat_100g, sugars_100g,
                    carbohydrates_100g
             FROM product 
             WHERE category = :category
-            ORDER BY product_name
+            ORDER BY name
             LIMIT :limit_val
             """)
             
@@ -636,40 +636,275 @@ class MySQLAdapter(DatabaseAdapter):
         pass
     
     def get_user_profile(self, user_id: int) -> Optional[Dict]:
-        # MySQL实现
-        pass
+        """获取用户完整画像"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                user_id,
+                username as user_name,
+                email,
+                age,
+                gender,
+                nutrition_goal,
+                daily_calories_target,
+                daily_protein_target,
+                daily_carb_target,
+                daily_fat_target,
+                activity_level,
+                height_cm,
+                weight_kg
+            FROM user 
+            WHERE user_id = :user_id
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id})
+            row = result.fetchone()
+            
+            if row:
+                return dict(row._mapping)
+            return None
+            
+        except Exception as e:
+            logger.error(f"MySQL查询用户失败 {user_id}: {e}")
+            return None
     
     def get_user_allergens(self, user_id: int) -> List[Dict]:
-        # MySQL实现
-        pass
+        """获取用户过敏原列表"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                a.allergen_id, 
+                a.name, 
+                a.category, 
+                a.description,
+                ua.severity_level, 
+                ua.confirmed, 
+                ua.notes
+            FROM user_allergen ua
+            JOIN allergen a ON ua.allergen_id = a.allergen_id
+            WHERE ua.user_id = :user_id AND ua.confirmed = 1
+            ORDER BY ua.severity_level DESC, a.name
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id})
+            rows = result.fetchall()
+            return [dict(row._mapping) for row in rows]
+            
+        except Exception as e:
+            logger.error(f"MySQL查询用户过敏原失败 {user_id}: {e}")
+            return []
     
     def get_user_preferences(self, user_id: int) -> Optional[Dict]:
-        # MySQL实现
-        pass
+        """获取用户偏好设置"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                preference_id, 
+                user_id, 
+                prefer_low_sugar, 
+                prefer_low_fat,
+                prefer_high_protein, 
+                prefer_low_sodium, 
+                prefer_organic,
+                prefer_low_calorie, 
+                preference_source, 
+                inference_confidence,
+                version, 
+                updated_at
+            FROM user_preference 
+            WHERE user_id = :user_id
+            ORDER BY version DESC
+            LIMIT 1
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id})
+            row = result.fetchone()
+            
+            if row:
+                return dict(row._mapping)
+            return None
+            
+        except Exception as e:
+            logger.error(f"MySQL查询用户偏好失败 {user_id}: {e}")
+            return None
     
     def get_purchase_history(self, user_id: int, days: int = 90) -> List[Dict]:
-        # MySQL实现
-        pass
+        """获取用户购买历史记录"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                pi.barcode,
+                p.name as product_name,
+                p.category,
+                pi.quantity,
+                pi.total_price,
+                pr.receipt_date
+            FROM purchase_item pi
+            JOIN purchase_record pr ON pi.purchase_id = pr.purchase_id
+            LEFT JOIN product p ON pi.barcode = p.barcode
+            WHERE pr.user_id = :user_id 
+            AND pr.receipt_date >= DATE_SUB(NOW(), INTERVAL :days DAY)
+            ORDER BY pr.receipt_date DESC
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id, "days": days})
+            rows = result.fetchall()
+            return [dict(row._mapping) for row in rows]
+            
+        except Exception as e:
+            logger.error(f"MySQL查询购买历史失败 {user_id}: {e}")
+            return []
     
     def get_user_purchase_matrix(self, user_id: int) -> Dict:
-        # MySQL实现
-        pass
+        """获取用户-商品购买矩阵（用于协同过滤）"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                pi.barcode,
+                p.name as product_name,
+                SUM(pi.quantity) as total_quantity,
+                COUNT(*) as purchase_count,
+                AVG(pi.unit_price) as avg_price
+            FROM purchase_item pi
+            JOIN purchase_record pr ON pi.purchase_id = pr.purchase_id
+            LEFT JOIN product p ON pi.barcode = p.barcode
+            WHERE pr.user_id = :user_id
+            GROUP BY pi.barcode, p.name
+            ORDER BY total_quantity DESC
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id})
+            rows = result.fetchall()
+            
+            matrix = {}
+            for row in rows:
+                row_dict = dict(row._mapping)
+                matrix[row_dict['barcode']] = row_dict
+            
+            return matrix
+            
+        except Exception as e:
+            logger.error(f"MySQL查询购买矩阵失败 {user_id}: {e}")
+            return {}
     
     def check_product_allergens(self, barcode: str, user_allergens: List[int]) -> Dict:
-        # MySQL实现
-        pass
+        """检查商品是否包含用户过敏原"""
+        try:
+            from sqlalchemy import text
+            if not user_allergens:
+                return {"has_allergens": False, "allergen_details": []}
+            
+            allergen_ids_str = ','.join(map(str, user_allergens))
+            query = text(f"""
+            SELECT 
+                pa.barcode,
+                pa.allergen_id,
+                a.name as allergen_name,
+                pa.presence_type,
+                pa.confidence_score
+            FROM product_allergen pa
+            JOIN allergen a ON pa.allergen_id = a.allergen_id
+            WHERE pa.barcode = :barcode 
+            AND pa.allergen_id IN ({allergen_ids_str})
+            """)
+            
+            result = self.connection.execute(query, {"barcode": barcode})
+            rows = result.fetchall()
+            
+            allergen_details = [dict(row._mapping) for row in rows]
+            
+            return {
+                "has_allergens": len(allergen_details) > 0,
+                "allergen_details": allergen_details
+            }
+            
+        except Exception as e:
+            logger.error(f"MySQL检查过敏原失败 {barcode}: {e}")
+            return {"has_allergens": False, "allergen_details": []}
     
     def get_allergen_by_name(self, allergen_name: str) -> Optional[Dict]:
-        # MySQL实现
-        pass
+        """根据名称查询过敏原信息"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT allergen_id, name, category, is_common, description
+            FROM allergen 
+            WHERE name = :allergen_name
+            """)
+            
+            result = self.connection.execute(query, {"allergen_name": allergen_name})
+            row = result.fetchone()
+            
+            if row:
+                return dict(row._mapping)
+            return None
+            
+        except Exception as e:
+            logger.error(f"MySQL查询过敏原失败 {allergen_name}: {e}")
+            return None
     
     def log_recommendation(self, log_data: Dict) -> bool:
-        # MySQL实现
-        pass
+        """记录推荐请求和结果"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            INSERT INTO recommendation_log 
+            (user_id, request_type, request_barcode, recommended_products, 
+             llm_prompt, llm_response, llm_analysis, processing_time_ms, 
+             total_candidates, filtered_candidates, algorithm_version, created_at)
+            VALUES (:user_id, :request_type, :request_barcode, :recommended_products,
+                    :llm_prompt, :llm_response, :llm_analysis, :processing_time_ms,
+                    :total_candidates, :filtered_candidates, :algorithm_version, NOW())
+            """)
+            
+            self.connection.execute(query, {
+                "user_id": log_data.get("user_id"),
+                "request_type": log_data.get("request_type", "BARCODE"),
+                "request_barcode": log_data.get("request_barcode"),
+                "recommended_products": json.dumps(log_data.get("recommended_products", {})),
+                "llm_prompt": log_data.get("llm_prompt"),
+                "llm_response": log_data.get("llm_response"),
+                "llm_analysis": log_data.get("llm_analysis"),
+                "processing_time_ms": log_data.get("processing_time_ms", 0),
+                "total_candidates": log_data.get("total_candidates", 0),
+                "filtered_candidates": log_data.get("filtered_candidates", 0),
+                "algorithm_version": log_data.get("algorithm_version", "v1.0")
+            })
+            self.connection.commit()
+            return True
+            
+        except Exception as e:
+            logger.error(f"MySQL记录推荐日志失败: {e}")
+            return False
     
     def get_recommendation_stats(self, user_id: int) -> Dict:
-        # MySQL实现
-        pass
+        """获取用户推荐统计信息"""
+        try:
+            from sqlalchemy import text
+            query = text("""
+            SELECT 
+                COUNT(*) as total_recommendations,
+                AVG(processing_time_ms) as avg_processing_time,
+                MAX(created_at) as last_recommendation_time
+            FROM recommendation_log 
+            WHERE user_id = :user_id
+            """)
+            
+            result = self.connection.execute(query, {"user_id": user_id})
+            row = result.fetchone()
+            
+            if row:
+                return dict(row._mapping)
+            return {}
+            
+        except Exception as e:
+            logger.error(f"MySQL查询推荐统计失败 {user_id}: {e}")
+            return {}
 
 class PostgreSQLAdapter(MySQLAdapter):
     """PostgreSQL数据库适配器实现 - 继承MySQL适配器"""

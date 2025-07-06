@@ -62,4 +62,19 @@
         constraintName="fk_scan_history_product"
         onDelete="CASCADE"/> -->
     </changeSet>
+
+    <!-- Add created_at column to scan_history table -->
+    <changeSet id="scan-history-add-created-at-3" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="scan_history"/>
+            <not>
+                <columnExists tableName="scan_history" columnName="created_at"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="scan_history">
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>
