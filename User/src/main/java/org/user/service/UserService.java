@@ -50,7 +50,7 @@ public class UserService implements IUserService{
     @Override
     public User add(UserDto user) {
         User existingUser = userRepository.findByUserName(user.getUserName());
-        if (existingUser == null) {
+        if (existingUser != null) {
             throw new IllegalArgumentException("Error: user name already exists.");
         }
 
@@ -74,9 +74,20 @@ public class UserService implements IUserService{
     }
 
     public User edit(UserDto user){
-        User userPojo = new User();
-        BeanUtils.copyProperties(user, userPojo);
-        return userRepository.save(userPojo);
+        // find existing user
+        User existingUser = userRepository.findById(user.getUserId()).orElseThrow(()->{
+            throw new IllegalArgumentException("User not exist.");
+        });
+        
+        // copy data from DTO to existing user
+        BeanUtils.copyProperties(user, existingUser);
+        
+        // set updated time
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        existingUser.setUpdatedTime(now.format(formatter));
+        
+        return userRepository.save(existingUser);
     }
 
     public void delete(Integer userId){
