@@ -14,15 +14,15 @@ import org.user.enums.NutritionGoal;
 public class UserDto {
     private Integer userId;
 
-    @NotBlank(message = "用户名不能为空") //可以去除空格
+    @NotBlank(message = "User name cannot be empty") //可以去除空格
     private String userName;
 
-    @NotBlank(message = "密码不能为空") //可以去除空格
+    @NotBlank(message = "Password cannot be empty") //可以去除空格
     @Length(min = 6, max = 12)
     private String passwordHash;
 
-    // 只在提供了email时才验证格式，允许为空
-    @Email(message = "邮箱格式不正确")
+    // only validate email when email is provided, allow empty
+    @Email(message = "Email format is incorrect")
     private String email;
     
     // @NotNull(message = "年龄不能为空")
@@ -48,8 +48,9 @@ public class UserDto {
     private Float dailyCarbTarget;
     private Float dailyFatTarget;
 
+    private String date_of_birth;
     private String createdTime;
-    
+    private String updatedTime;
 
     @Override
     public String toString() {
@@ -184,5 +185,21 @@ public class UserDto {
 
     public void setDailyFatTarget(Float dailyFatTarget) {
         this.dailyFatTarget = dailyFatTarget;
+    }
+
+    public String getDate_of_birth() {
+        return date_of_birth;
+    }
+
+    public void setDate_of_birth(String date_of_birth) {
+        this.date_of_birth = date_of_birth;
+    }
+
+    public String getUpdatedTime() {
+        return updatedTime;
+    }
+
+    public void setUpdatedTime(String updatedTime) {
+        this.updatedTime = updatedTime;
     }
 }
