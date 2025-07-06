@@ -122,18 +122,19 @@ class AllergenFilter(BaseFilter):
             # 查询PRODUCT_ALLERGEN表
             allergen_check_result = self.db_manager.check_product_allergens(barcode, user_allergen_ids)
             
-            if allergen_check_result.get("safe", False):
+            # 修复：检查has_allergens字段，如果为False则产品安全
+            if not allergen_check_result.get("has_allergens", True):
                 safe_products.append(product)
             else:
                 self.filtered_count += 1
-                detected_allergens = allergen_check_result.get("detected_allergens", [])
-                allergen_names = [a.get("name", "未知") for a in detected_allergens]
+                detected_allergens = allergen_check_result.get("allergen_details", [])
+                allergen_names = [a.get("allergen_name", "未知") for a in detected_allergens]
                 self._add_filtered_detail(product, f"Contains user allergens: {', '.join(allergen_names)}")
                 
                 logger.debug(f"过敏原过滤: {product.get('product_name', '未知商品')} - 包含用户过敏原: {', '.join(allergen_names)}")
                 # 增加更详细的过滤理由日志
                 for allergen_info in detected_allergens:
-                    allergen_name = allergen_info.get("name", "未知过敏原")
+                    allergen_name = allergen_info.get("allergen_name", "未知过敏原")
                     logger.debug(f"  具体过敏原匹配: '{allergen_name}' 在商品 '{product.get('product_name', '未知商品')}' 中被检测到")
         
         logger.info(f"Allergen filtering: {len(products)} -> {len(safe_products)} products")
