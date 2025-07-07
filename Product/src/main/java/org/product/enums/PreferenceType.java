@@ -1,9 +1,9 @@
 package org.product.enums;
 
 public enum PreferenceType {
-    LIKE("like", "喜欢", 1.5),
-    DISLIKE("dislike", "不喜欢", 0.3),
-    BLACKLIST("blacklist", "黑名单", 0.0);
+    LIKE("like", "like it", 1.5),
+    DISLIKE("dislike", "dislike it", 0.3),
+    BLACKLIST("blacklist", "blacklist it", 0.0);
 
     private final String code;
     private final String description;

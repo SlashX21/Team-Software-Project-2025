@@ -52,7 +52,6 @@
         </createTable>
     </changeSet>
 
-    <!-- 添加外键约束 - 单独的changeset -->
     <changeSet id="monthly-statistics-add-foreign-key-1" author="YanhaoSun">
         <addForeignKeyConstraint
             baseTableName="monthly_statistics"

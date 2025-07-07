@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 public interface SugarGoalsRepository extends CrudRepository<SugarGoals, Integer> {
     
     /**
-     * query user's active sugar goal
+     * query user's latest sugar goal
      */
-    SugarGoals findByUserIdAndIsActiveTrue(Integer userId);
+    SugarGoals findTopByUserIdOrderByCreatedAtDesc(Integer userId);
     
     /**
      * query user's all sugar goals

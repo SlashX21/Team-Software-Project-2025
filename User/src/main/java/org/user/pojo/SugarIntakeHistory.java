@@ -11,7 +11,7 @@ public class SugarIntakeHistory {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "intake_id")
+    @Column(name = "id")
     private Integer intakeId;
     
     @Column(name = "user_id", nullable = false)
@@ -23,18 +23,14 @@ public class SugarIntakeHistory {
     @Column(name = "sugar_amount_mg", nullable = false)
     private Float sugarAmountMg;
     
-    @Column(name = "intake_time", nullable = false)
-    private LocalDateTime intakeTime;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source_type", nullable = false)
-    private SourceType sourceType = SourceType.MANUAL;
+    @Column(name = "quantity", nullable = false)
+    private Float quantity;
+
+    @Column(name = "consumed_at", nullable = false, updatable = false)
+    private LocalDateTime consumedAt;
     
     @Column(name = "barcode", length = 255)
     private String barcode;
-    
-    @Column(name = "serving_size", length = 50)
-    private String servingSize;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -43,12 +39,11 @@ public class SugarIntakeHistory {
     public SugarIntakeHistory() {}
     
     public SugarIntakeHistory(Integer userId, String foodName, Float sugarAmountMg, 
-                             LocalDateTime intakeTime, SourceType sourceType) {
+                             Float quantity) {
         this.userId = userId;
         this.foodName = foodName;
         this.sugarAmountMg = sugarAmountMg;
-        this.intakeTime = intakeTime;
-        this.sourceType = sourceType;
+        this.quantity = quantity;
     }
     
     // PrePersist回调
@@ -92,20 +87,20 @@ public class SugarIntakeHistory {
         this.sugarAmountMg = sugarAmountMg;
     }
     
-    public LocalDateTime getIntakeTime() {
-        return intakeTime;
+    public Float getQuantity() {
+        return quantity;
     }
     
-    public void setIntakeTime(LocalDateTime intakeTime) {
-        this.intakeTime = intakeTime;
+    public void setQuantity(Float quantity) {
+        this.quantity = quantity;
     }
     
-    public SourceType getSourceType() {
-        return sourceType;
+    public LocalDateTime getConsumedAt() {
+        return consumedAt;
     }
     
-    public void setSourceType(SourceType sourceType) {
-        this.sourceType = sourceType;
+    public void setConsumedAt(LocalDateTime consumedAt) {
+        this.consumedAt = consumedAt;
     }
     
     public String getBarcode() {
@@ -114,14 +109,6 @@ public class SugarIntakeHistory {
     
     public void setBarcode(String barcode) {
         this.barcode = barcode;
-    }
-    
-    public String getServingSize() {
-        return servingSize;
-    }
-    
-    public void setServingSize(String servingSize) {
-        this.servingSize = servingSize;
     }
     
     public LocalDateTime getCreatedAt() {
@@ -139,10 +126,9 @@ public class SugarIntakeHistory {
                 ", userId=" + userId +
                 ", foodName='" + foodName + '\'' +
                 ", sugarAmountMg=" + sugarAmountMg +
-                ", intakeTime=" + intakeTime +
-                ", sourceType=" + sourceType +
+                ", quantity=" + quantity +
+                ", consumedAt=" + consumedAt +
                 ", barcode='" + barcode + '\'' +
-                ", servingSize='" + servingSize + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
     }

@@ -45,8 +45,8 @@ public class MonthlyStatistics {
     @Column(name="calculated_at", columnDefinition = "DATETIME")
     private String calculatedAt;
 
-    @Column(name="update_at", columnDefinition = "DATETIME")
-    private String updateAt;
+    @Column(name="updated_at", columnDefinition = "DATETIME")
+    private String updatedAt;
 
     @Override
     public String toString() {
@@ -62,7 +62,7 @@ public class MonthlyStatistics {
                 ", popularProducts='" + popularProducts + '\'' +
                 ", nutritionBreakdown='" + nutritionBreakdown + '\'' +
                 ", calculatedAt='" + calculatedAt + '\'' +
-                ", updateAt='" + updateAt + '\'' +
+                ", updatedAt='" + updatedAt + '\'' +
                 '}';
     }
 
@@ -223,17 +223,17 @@ public class MonthlyStatistics {
     }
 
     /**
-     * @return String return the updateAt
+     * @return String return the updatedAt
      */
-    public String getUpdateAt() {
-        return updateAt;
+    public String getUpdatedAt() {
+        return updatedAt;
     }
 
     /**
-     * @param updateAt the updateAt to set
+     * @param updatedAt the updatedAt to set
      */
-    public void setUpdateAt(String updateAt) {
-        this.updateAt = updateAt;
+    public void setUpdatedAt(String updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
 }

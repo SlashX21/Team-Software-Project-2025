@@ -724,27 +724,26 @@ public class UserHistoryService implements IUserHistoryService {
         ActionTaken actionTakenEnum;
         try {
             if (actionTaken == null || actionTaken.isEmpty()) {
-                actionTakenEnum = ActionTaken.NONE;
+                actionTakenEnum = ActionTaken.UNKNOWN;
             } else {
                 // map common action values to enum values
                 switch (actionTaken.toLowerCase()) {
                     case "avoided":
                         actionTakenEnum = ActionTaken.AVOIDED;
                         break;
-                    case "remove":
-                        actionTakenEnum = ActionTaken.REMOVE;
+                    case "no_action":
+                        actionTakenEnum = ActionTaken.NO_ACTION;
                         break;
-                    case "report":
-                        actionTakenEnum = ActionTaken.REPORT;
+                    case "purchased":
+                        actionTakenEnum = ActionTaken.PURCHASED;
                         break;
-                    case "none":
                     default:
-                        actionTakenEnum = ActionTaken.NONE;
+                        actionTakenEnum = ActionTaken.UNKNOWN;
                         break;
                 }
             }
         } catch (Exception e) {
-            actionTakenEnum = ActionTaken.NONE;
+            actionTakenEnum = ActionTaken.UNKNOWN;
         }
         scanHistory.setActionTaken(actionTakenEnum);
         

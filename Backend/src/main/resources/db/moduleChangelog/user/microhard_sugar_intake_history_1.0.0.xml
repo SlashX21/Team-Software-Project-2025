@@ -13,28 +13,25 @@
             </not>
         </preConditions>
         <createTable tableName="sugar_intake_history">
-            <column name="intake_id" type="${type.int}" autoIncrement="true">
+            <column name="id" type="${type.int}" autoIncrement="true">
                 <constraints primaryKey="true"/>
             </column>
             <column name="user_id" type="${type.int}">
                 <constraints nullable="false"/>
             </column>
-            <column name="food_name" type="VARCHAR(200)">
+            <column name="food_name" type="${type.string}">
                 <constraints nullable="false"/>
             </column>
-            <column name="sugar_amount_mg" type="${type.float}">
+            <column name="sugar_amount_mg" type="${type.decimal}">
                 <constraints nullable="false"/>
             </column>
-            <column name="intake_time" type="${type.datetime}">
+            <column name="quantity" type="${type.decimal}">
                 <constraints nullable="false"/>
             </column>
-            <column name="source_type" type="${type.string}" defaultValue="manual">
+            <column name="consumed_at" type="${type.timestamp}">
                 <constraints nullable="false"/>
             </column>
-            <column name="barcode" type="VARCHAR(255)">
-                <constraints nullable="true"/>
-            </column>
-            <column name="serving_size" type="VARCHAR(50)">
+            <column name="barcode" type="${type.string}">
                 <constraints nullable="true"/>
             </column>
             <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
@@ -92,47 +89,6 @@
         </createIndex>
     </changeSet>
 
-    <!-- add index for intake_time -->
-    <changeSet id="sugar-intake-history-add-index-intake-time-1" author="YanhaoSun">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="sugar_intake_history"/>
-            <not>
-                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_intake_time"/>
-            </not>
-        </preConditions>
-        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_intake_time">
-            <column name="intake_time"/>
-        </createIndex>
-    </changeSet>
-
-    <!-- add composite index for user_id and intake_time -->
-    <changeSet id="sugar-intake-history-add-composite-index-1" author="YanhaoSun">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="sugar_intake_history"/>
-            <not>
-                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_time"/>
-            </not>
-        </preConditions>
-        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_time">
-            <column name="user_id"/>
-            <column name="intake_time"/>
-        </createIndex>
-    </changeSet>
-
-    <!-- add check constraint for source_type -->
-    <changeSet id="sugar-intake-history-add-check-constraint-source-type-1" author="YanhaoSun">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="sugar_intake_history"/>
-        </preConditions>
-        <sql>
-            ALTER TABLE sugar_intake_history 
-            ADD CONSTRAINT chk_source_type 
-            CHECK (source_type IN ('scan', 'manual', 'receipt'))
-        </sql>
-        <rollback>
-            ALTER TABLE sugar_intake_history DROP CONSTRAINT chk_source_type
-        </rollback>
-    </changeSet>
 
     <!-- add check constraint for sugar_amount_mg -->
     <changeSet id="sugar-intake-history-add-check-constraint-sugar-amount-1" author="YanhaoSun">

@@ -13,17 +13,17 @@
             <column name="user_id" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="bar_code" type="VARCHAR(255)">
+            <column name="barcode" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="preference_type" type="VARCHAR(50)">
                 <constraints nullable="false"/>
             </column>
-            <column name="reason" type="TEXT">
+            <column name="reason" type="${type.longtext}">
                 <constraints nullable="true"/>
             </column>
-            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <!-- <constraints nullable="false"/> -->
             </column>
         </createTable>
     </changeSet>
@@ -32,12 +32,12 @@
         <createIndex indexName="idx_product_preference_user_id" tableName="product_preference">
             <column name="user_id"/>
         </createIndex>
-        <createIndex indexName="idx_product_preference_bar_code" tableName="product_preference">
-            <column name="bar_code"/>
+        <createIndex indexName="idx_product_preference_barcode" tableName="product_preference">
+            <column name="barcode"/>
         </createIndex>
-        <createIndex indexName="idx_product_preference_user_bar_code" tableName="product_preference">
+        <createIndex indexName="idx_product_preference_user_barcode" tableName="product_preference">
             <column name="user_id"/>
-            <column name="bar_code"/>
+            <column name="barcode"/>
         </createIndex>
         <createIndex indexName="idx_product_preference_type" tableName="product_preference">
             <column name="preference_type"/>
@@ -56,7 +56,7 @@
                 
         <addForeignKeyConstraint
                 baseTableName="product_preference"
-                baseColumnNames="bar_code"
+                baseColumnNames="barcode"
                 constraintName="fk_product_preference_product"
                 referencedTableName="product"
                 referencedColumnNames="barcode"
@@ -64,11 +64,11 @@
                 onUpdate="CASCADE"/>
     </changeSet>
 
-    <changeSet id="add-product-preference-unique-constraint" author="microhard">
+    <!-- <changeSet id="add-product-preference-unique-constraint" author="microhard">
         <addUniqueConstraint
                 tableName="product_preference"
-                columnNames="user_id, bar_code"
+                columnNames="user_id, barcode"
                 constraintName="uk_product_preference_user_product"/>
-    </changeSet>
+    </changeSet> -->
 
 </databaseChangeLog> 

@@ -6,7 +6,7 @@ package org.user.controller;
 // import com.demo.springboot_demo.service.IUserService;
 
 
-import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
+import org.user.pojo.DTO.ResponseMessage;
 import org.user.pojo.DTO.UserDto;
 import org.user.pojo.User;
 
@@ -27,24 +27,26 @@ import org.user.service.IUserHistoryService;
 import org.user.service.ISugarTrackingService;
 import org.user.pojo.DTO.UserHistoryResponseDto;
 import org.user.pojo.DTO.UserHistoryListDto;
-import org.user.pojo.DTO.SugarTrackingDto;
-import org.user.pojo.DTO.SugarRecordsDto;
-import org.user.pojo.DTO.SugarRecordResponseDto;
-import org.user.pojo.DTO.SugarHistoryStatsDto;
 import org.user.pojo.DTO.SugarGoalResponseDto;
 import org.user.pojo.DTO.SugarGoalRequestDto;
-import org.user.pojo.SugarRecords;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.user.service.IUserPreferenceService;
 import org.user.pojo.DTO.UserPreferenceDto;
 import org.user.enums.PreferenceSource;
+import org.user.service.ISugarIntakeHistoryService;
+import org.user.pojo.DTO.SugarIntakeHistoryDto;
+import org.user.enums.SourceType;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
 
-import java.sql.Date;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 
 @RestController //允许接口方法返回对象, 并且对象可以直接转换为json文本
@@ -54,6 +56,7 @@ public class UserController {
     @Autowired IUserHistoryService userHistoryService;
     @Autowired ISugarTrackingService sugarTrackingService;
     @Autowired IUserPreferenceService userPreferenceService;
+    @Autowired ISugarIntakeHistoryService sugarIntakeHistoryService;
 
     // Register user
     @PostMapping // URL: localhost:8080/user/ method: post
@@ -400,98 +403,6 @@ public class UserController {
     }
 
     /**
-     * Get user's daily sugar tracking
-     */
-    @GetMapping("/{userId}/sugar-tracking/daily/{date}")
-    public ResponseEntity<ResponseMessage<SugarTrackingDto>> getDailySugarTracking(
-            @PathVariable Integer userId,
-            @PathVariable String date) {
-        
-        try {
-            // validate date format (YYYY-MM-DD)
-            if (!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                ResponseMessage<SugarTrackingDto> errorResponse = new ResponseMessage<>(
-                        400, "Invalid date format. Expected YYYY-MM-DD", null);
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-            Date sqlDate = Date.valueOf(LocalDate.parse(date));
-
-            SugarTrackingDto sugarTracking = sugarTrackingService.getDailySugarTracking(userId, sqlDate);
-            ResponseMessage<SugarTrackingDto> response = new ResponseMessage<>(200, "Success", sugarTracking);
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            ResponseMessage<SugarTrackingDto> errorResponse = new ResponseMessage<>(
-                    500, "Internal server error: " + e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-    /**
-     * add sugar record
-     * POST /user/{userId}/sugar-tracking/record
-     */
-    @PostMapping("/{userId}/sugar-tracking/record")
-    public ResponseEntity<ResponseMessage<SugarRecordResponseDto>> addSugarRecord(
-            @PathVariable Integer userId,
-            @Validated @RequestBody SugarRecordsDto sugarRecordDto) {
-        // TODO: product barcode, source, notes are passed to DTO from frontend
-        try {
-            // ensure userId in DTO is the same as the path parameter
-            sugarRecordDto.setUserId(userId);
-            
-            SugarRecords savedRecord = sugarTrackingService.addSugarRecord(sugarRecordDto);
-            
-            // create response DTO
-            SugarRecordResponseDto responseDto = new SugarRecordResponseDto(
-                    "sugar_new_" + String.format("%03d", savedRecord.getRecordId()),
-                    savedRecord.getFoodName(),
-                    savedRecord.getSugarAmountMg(),
-                    savedRecord.getQuantity(),
-                    savedRecord.getConsumedAt(),
-                    // TODO: product barcode, source, notes are not in the DTO
-                    savedRecord.getProductBarcode(),
-                    savedRecord.getCreatedAt()
-            );
-            
-            ResponseMessage<SugarRecordResponseDto> response = new ResponseMessage<>(201, "Sugar record added successfully", responseDto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-            
-        } catch (Exception e) {
-            ResponseMessage<SugarRecordResponseDto> errorResponse = new ResponseMessage<>(
-                    500, "Internal server error: " + e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-    /**
-     * obtain user's sugar intake history statistics
-     * GET /user/{userId}/sugar-tracking/history
-     */
-    @GetMapping("/{userId}/sugar-tracking/history")
-    public ResponseEntity<ResponseMessage<SugarHistoryStatsDto>> getSugarHistoryStats(
-            @PathVariable Integer userId,
-            @RequestParam(defaultValue = "week") String period) {
-        
-        try {
-            // validate period parameter
-            if (!period.equals("week") && !period.equals("month") && !period.equals("year")) {
-                ResponseMessage<SugarHistoryStatsDto> errorResponse = new ResponseMessage<>(
-                        400, "Invalid period. Expected 'week', 'month', or 'year'", null);
-                return ResponseEntity.badRequest().body(errorResponse);
-            }
-            SugarHistoryStatsDto historyStats = sugarTrackingService.getSugarHistoryStats(userId, period);
-            ResponseMessage<SugarHistoryStatsDto> response = new ResponseMessage<>(200, "Success", historyStats);
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            ResponseMessage<SugarHistoryStatsDto> errorResponse = new ResponseMessage<>(
-                    500, "Internal server error: " + e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-    /**
      * obtain user's sugar intake goal
      * GET /user/{userId}/sugar-tracking/goal
      */
@@ -527,49 +438,6 @@ public class UserController {
             
         } catch (Exception e) {
             ResponseMessage<SugarGoalResponseDto> errorResponse = new ResponseMessage<>(
-                    500, "Internal server error: " + e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
-    }
-
-    /**
-     * delete sugar intake record
-     * DELETE /user/{userId}/sugar-tracking/record/{recordId}
-     */
-    @DeleteMapping("/{userId}/sugar-tracking/record/{recordId}")
-    public ResponseEntity<ResponseMessage<String>> deleteSugarRecord(
-            @PathVariable Integer userId,
-            @PathVariable Integer recordId) {
-        
-        try {
-            boolean deleted = sugarTrackingService.deleteSugarRecord(userId, recordId);
-            
-            if (deleted) {
-                ResponseMessage<String> response = new ResponseMessage<>(200, "Sugar record deleted successfully", null);
-                return ResponseEntity.ok(response);
-            } else {
-                ResponseMessage<String> errorResponse = new ResponseMessage<>(
-                        404, "Sugar record not found", null);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-            }
-            
-        } catch (RuntimeException e) {
-            // handle business exception
-            if (e.getMessage().contains("not found")) {
-                ResponseMessage<String> errorResponse = new ResponseMessage<>(
-                        404, e.getMessage(), null);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-            } else if (e.getMessage().contains("does not belong")) {
-                ResponseMessage<String> errorResponse = new ResponseMessage<>(
-                        403, "Forbidden: " + e.getMessage(), null);
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-            } else {
-                ResponseMessage<String> errorResponse = new ResponseMessage<>(
-                        500, "Internal server error: " + e.getMessage(), null);
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-            }
-        } catch (Exception e) {
-            ResponseMessage<String> errorResponse = new ResponseMessage<>(
                     500, "Internal server error: " + e.getMessage(), null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
@@ -852,7 +720,7 @@ public class UserController {
     }
     
     /**
-     * 辅助方法：从Map中获取Boolean值，支持下划线和驼峰命名
+     * helper method: get boolean value from map, support underscore and camel case
      */
     private Boolean getBooleanValue(Map<String, Object> request, String underscoreKey, String camelKey) {
         Object value = request.get(underscoreKey);
@@ -863,7 +731,7 @@ public class UserController {
     }
     
     /**
-     * 辅助方法：从Map中获取String值，支持下划线和驼峰命名
+     * helper method: get string value from map, support underscore and camel case
      */
     private String getStringValue(Map<String, Object> request, String underscoreKey, String camelKey) {
         Object value = request.get(underscoreKey);
@@ -871,5 +739,335 @@ public class UserController {
             value = request.get(camelKey);
         }
         return value != null ? (String) value : null;
+    }
+
+    /**
+     * add sugar intake record
+     * POST /user/{userId}/sugar-tracking/record
+     */
+    @PostMapping("/{userId}/sugar-tracking/record")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> addSugarRecord(
+            @PathVariable Integer userId,
+            @RequestBody Map<String, Object> requestBody) {
+        
+        try {
+            // create dto object
+            SugarIntakeHistoryDto dto = new SugarIntakeHistoryDto();
+            dto.setUserId(userId);
+            
+            // map fields
+            if (requestBody.containsKey("foodName")) {
+                dto.setFoodName((String) requestBody.get("foodName"));
+            } else {
+                return ResponseEntity.badRequest().body(
+                    new ResponseMessage<>(400, "foodName is required", null));
+            }
+            
+            if (requestBody.containsKey("sugarAmountMg")) {
+                Object sugarAmount = requestBody.get("sugarAmountMg");
+                if (sugarAmount instanceof Number) {
+                    dto.setSugarAmountMg(((Number) sugarAmount).floatValue());
+                } else {
+                    return ResponseEntity.badRequest().body(
+                        new ResponseMessage<>(400, "sugarAmountMg must be a number", null));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(
+                    new ResponseMessage<>(400, "sugarAmountMg is required", null));
+            }
+            
+            if (requestBody.containsKey("quantity")) {
+                Object quantity = requestBody.get("quantity");
+                if (quantity instanceof Number) {
+                    // quantity field is stored in the entity, but here we handle it by calculating the total sugar intake
+                    Float quantityValue = ((Number) quantity).floatValue();
+                    // total sugar intake = sugar amount per food * quantity
+                    Float totalSugarMg = dto.getSugarAmountMg() * quantityValue;
+                    dto.setSugarAmountMg(totalSugarMg);
+                } else {
+                    return ResponseEntity.badRequest().body(
+                        new ResponseMessage<>(400, "quantity must be a number", null));
+                }
+            } else {
+                return ResponseEntity.badRequest().body(
+                    new ResponseMessage<>(400, "quantity is required", null));
+            }
+            
+            // set intake time
+            if (requestBody.containsKey("consumedAt")) {
+                String timeStr = (String) requestBody.get("consumedAt");
+                try {
+                    // support ISO format time
+                    if (timeStr.contains("T")) {
+                        timeStr = convertIsoToDateTime(timeStr);
+                    }
+                    dto.setIntakeTime(LocalDateTime.parse(timeStr, 
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                } catch (DateTimeParseException e) {
+                    return ResponseEntity.badRequest().body(
+                        new ResponseMessage<>(400, "Invalid consumedAt format. Use yyyy-MM-dd HH:mm:ss", null));
+                }
+            } else {
+                // default current time
+                dto.setIntakeTime(LocalDateTime.now());
+            }
+            
+            // set default to manual input
+            dto.setSourceType(SourceType.MANUAL);
+            
+            // call service to add record
+            ResponseMessage<SugarIntakeHistoryDto> serviceResponse = sugarIntakeHistoryService.addSugarIntakeRecord(dto);
+            
+            if (serviceResponse.getCode() == 200) {
+                // build response data
+                SugarIntakeHistoryDto savedRecord = serviceResponse.getData();
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("id", savedRecord.getIntakeId().toString());
+                responseData.put("foodName", savedRecord.getFoodName());
+                responseData.put("sugarAmountMg", ((Number) requestBody.get("sugarAmountMg")).floatValue());
+                responseData.put("quantity", requestBody.get("quantity"));
+                responseData.put("totalSugarMg", savedRecord.getSugarAmountMg());
+                responseData.put("consumedAt", savedRecord.getIntakeTime().format(
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
+                responseData.put("createdAt", savedRecord.getCreatedAt().format(
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
+                
+                ResponseMessage<Map<String, Object>> response = new ResponseMessage<>(
+                    200, "Sugar record added successfully", responseData);
+                
+                return ResponseEntity.status(200).body(response);
+            } else {
+                return ResponseEntity.status(serviceResponse.getCode()).body(
+                    new ResponseMessage<>(serviceResponse.getCode(), serviceResponse.getMessage(), null));
+            }
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(
+                new ResponseMessage<>(500, "Failed to add sugar record: " + e.getMessage(), null));
+        }
+    }
+
+    /**
+     * convert ISO 8601 format to MySQL DATETIME format
+     */
+    private String convertIsoToDateTime(String isoDateTime) {
+        try {
+            // try to parse ISO 8601 format (e.g. 2025-01-06T15:30:00Z)
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(isoDateTime);
+            LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+            return localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (DateTimeParseException e) {
+            try {
+                // try to parse simple ISO format (e.g. 2025-01-06T15:30:00)
+                LocalDateTime localDateTime = LocalDateTime.parse(isoDateTime);
+                return localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (DateTimeParseException e2) {
+                // if both parsing fail, return current time
+                return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            }
+        }
+    }
+
+    /**
+     * get daily sugar data
+     * GET /user/{userId}/sugar-tracking/daily/{date}
+     */
+    @GetMapping("/{userId}/sugar-tracking/daily/{date}")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> getDailySugarData(
+            @PathVariable Integer userId,
+            @PathVariable String date) {
+        
+        try {
+            ResponseMessage<Map<String, Object>> response = sugarIntakeHistoryService.getDailySugarTrackingData(userId, date);
+            
+            if (response.getCode() == 200) {
+                Map<String, Object> originalData = response.getData();
+                
+                // rebuild response data to match API specification
+                Map<String, Object> responseData = new HashMap<>();
+                
+                // basic statistics
+                responseData.put("currentIntakeMg", originalData.get("currentIntakeMg"));
+                responseData.put("dailyGoalMg", originalData.get("dailyGoalMg"));
+                responseData.put("progressPercentage", originalData.get("progressPercentage"));
+                
+                // status mapping
+                String originalStatus = (String) originalData.get("status");
+                String status;
+                switch (originalStatus) {
+                    case "on_track":
+                        status = "good";
+                        break;
+                    case "warning":
+                        status = "warning";
+                        break;
+                    case "over_limit":
+                        status = "over_limit";
+                        break;
+                    default:
+                        status = "good";
+                }
+                responseData.put("status", status);
+                
+                responseData.put("date", originalData.get("date") + "T00:00:00Z");
+                
+                // topContributors data processing - get actual sugar intake records
+                List<Map<String, Object>> topContributors = new ArrayList<>();
+                
+                // get actual sugar intake records of the day
+                ResponseMessage<List<SugarIntakeHistoryDto>> dailyRecords = 
+                    sugarIntakeHistoryService.getSugarIntakeRecordsByUserIdAndDate(userId, date);
+                
+                if (dailyRecords.getCode() == 200 && dailyRecords.getData() != null) {
+                    List<SugarIntakeHistoryDto> records = dailyRecords.getData();
+                    
+                    // sort by sugar amount, get top 5
+                    records.stream()
+                            .sorted((a, b) -> Float.compare(b.getSugarAmountMg(), a.getSugarAmountMg()))
+                            .limit(5)
+                            .forEach(record -> {
+                                Map<String, Object> contributor = new HashMap<>();
+                                contributor.put("id", record.getIntakeId().toString());
+                                contributor.put("foodName", record.getFoodName());
+                                contributor.put("sugarAmountMg", Math.round(record.getSugarAmountMg()));
+                                contributor.put("quantity", 1.0); // 因为前端已将总糖分计算好
+                                contributor.put("consumedAt", record.getIntakeTime().format(
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
+                                topContributors.add(contributor);
+                            });
+                }
+                
+                responseData.put("topContributors", topContributors);
+                
+                ResponseMessage<Map<String, Object>> finalResponse = new ResponseMessage<>(200, "success", responseData);
+                return ResponseEntity.ok(finalResponse);
+                
+            } else {
+                return ResponseEntity.status(response.getCode()).body(response);
+            }
+            
+        } catch (Exception e) {
+            ResponseMessage<Map<String, Object>> errorResponse = new ResponseMessage<>(
+                    500, "Internal server error: " + e.getMessage(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * delete sugar record
+     * DELETE /user/{userId}/sugar-tracking/record/{recordId}
+     */
+    @DeleteMapping("/{userId}/sugar-tracking/record/{recordId}")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> deleteSugarRecord(
+            @PathVariable Integer userId,
+            @PathVariable String recordId) {
+        
+        try {
+            // convert recordId from string to integer
+            Integer intakeId;
+            try {
+                intakeId = Integer.parseInt(recordId);
+            } catch (NumberFormatException e) {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", 400);
+                errorData.put("message", "Invalid record ID format");
+                errorData.put("data", null);
+                return ResponseEntity.badRequest().body(new ResponseMessage<>(400, "Invalid record ID format", errorData));
+            }
+            
+            // verify that the record belongs to the specified user
+            ResponseMessage<SugarIntakeHistoryDto> recordResponse = sugarIntakeHistoryService.getSugarIntakeRecordById(intakeId);
+            if (recordResponse.getCode() != 200 || recordResponse.getData() == null) {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", 404);
+                errorData.put("message", "Sugar record not found");
+                errorData.put("data", null);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ResponseMessage<>(404, "Sugar record not found", errorData));
+            }
+            
+            // check if the record belongs to the specified user
+            SugarIntakeHistoryDto record = recordResponse.getData();
+            if (!record.getUserId().equals(userId)) {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", 403);
+                errorData.put("message", "Access denied - record does not belong to this user");
+                errorData.put("data", null);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ResponseMessage<>(403, "Access denied", errorData));
+            }
+            
+            // delete the record
+            ResponseMessage<String> deleteResponse = sugarIntakeHistoryService.deleteSugarIntakeRecord(intakeId);
+            if (deleteResponse.getCode() == 200) {
+                Map<String, Object> responseData = new HashMap<>();
+                responseData.put("code", 200);
+                responseData.put("message", "Sugar record deleted successfully");
+                responseData.put("data", null);
+                
+                return ResponseEntity.ok(new ResponseMessage<>(200, "Sugar record deleted successfully", responseData));
+            } else {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", deleteResponse.getCode());
+                errorData.put("message", deleteResponse.getMessage());
+                errorData.put("data", null);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseMessage<>(deleteResponse.getCode(), deleteResponse.getMessage(), errorData));
+            }
+            
+        } catch (Exception e) {
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("code", 500);
+            errorData.put("message", "Internal server error: " + e.getMessage());
+            errorData.put("data", null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseMessage<>(500, "Internal server error", errorData));
+        }
+    }
+
+    /**
+     * get user sugar intake history statistics
+     * GET /user/{userId}/sugar-tracking/history
+     */
+    @GetMapping("/{userId}/sugar-tracking/history")
+    public ResponseEntity<ResponseMessage<Map<String, Object>>> getSugarIntakeHistoryStats(
+            @PathVariable Integer userId,
+            @RequestParam(defaultValue = "week") String period) {
+        
+        try {
+            // parameter validation
+            if (!period.matches("^(week|month|year)$")) {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", 400);
+                errorData.put("message", "Invalid period parameter. Must be 'week', 'month', or 'year'");
+                errorData.put("data", null);
+                return ResponseEntity.badRequest().body(new ResponseMessage<>(400, "Invalid period parameter", errorData));
+            }
+            
+            // get statistics data
+            ResponseMessage<Map<String, Object>> statsResponse = sugarIntakeHistoryService.getSugarIntakeHistoryStats(userId, period);
+            
+            if (statsResponse.getCode() == 200) {
+                return ResponseEntity.ok(new ResponseMessage<>(200, "success", statsResponse.getData()));
+            } else {
+                Map<String, Object> errorData = new HashMap<>();
+                errorData.put("code", statsResponse.getCode());
+                errorData.put("message", statsResponse.getMessage());
+                errorData.put("data", null);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseMessage<>(statsResponse.getCode(), statsResponse.getMessage(), errorData));
+            }
+            
+        } catch (Exception e) {
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("code", 500);
+            errorData.put("message", "Internal server error: " + e.getMessage());
+            errorData.put("data", null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseMessage<>(500, "Internal server error", errorData));
+        }
+    }
+
+    /**
+     * generate random time for demo
+     */
+    private String getRandomTime() {
+        int hour = (int) (Math.random() * 24);
+        int minute = (int) (Math.random() * 60);
+        return String.format("%02d:%02d", hour, minute);
     }
 }
