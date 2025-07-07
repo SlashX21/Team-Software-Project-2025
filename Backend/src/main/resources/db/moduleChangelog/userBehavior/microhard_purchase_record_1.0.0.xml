@@ -37,12 +37,21 @@
                 </column>
             </createTable>
 
-        <addForeignKeyConstraint
+            <addForeignKeyConstraint
+                baseTableName="purchase_record"
+                baseColumnNames="user_id"
+                referencedTableName="user"
+                referencedColumnNames="user_id"
+                constraintName="fk_purchase_record_user"
+                onDelete="CASCADE"/>
+        </changeSet>
+        <changeSet id="purchase-record-add-foreign-key-1" author="YanhaoSun">
+            <addForeignKeyConstraint
             baseTableName="purchase_record"
-            baseColumnNames="user_id"
-            referencedTableName="user"
-            referencedColumnNames="user_id"
-            constraintName="fk_purchase_record_user"
+            baseColumnNames="scan_id"
+            referencedTableName="scan_history"
+            referencedColumnNames="scan_id"
+            constraintName="fk_purchase_record_scan_history"
             onDelete="CASCADE"/>
         </changeSet>
 </databaseChangeLog>

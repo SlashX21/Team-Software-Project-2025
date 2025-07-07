@@ -7,9 +7,9 @@
 
     <!-- 引用全局的属性文件 -->
     <!-- 这个全局属性文件里面定义了所有子模块都遵循的规则, 比方说: 类型转换-->
-    <!-- 注意：purchase_record必须在purchase_item之前创建，因为存在外键依赖 -->
+    <!-- 注意：依赖关系执行顺序：scan_history -> purchase_record -> purchase_item -->
+    <include file="classpath:db/moduleChangelog/userBehavior/microhard_scan_history_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_purchase_record_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_purchase_item_1.0.0.xml"></include>
-    <include file="classpath:db/moduleChangelog/userBehavior/microhard_scan_history_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_recommendation_log_1.0.0.xml"></include>
 </databaseChangeLog>

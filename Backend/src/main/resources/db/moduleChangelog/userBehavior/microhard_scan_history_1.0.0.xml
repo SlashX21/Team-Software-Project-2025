@@ -20,15 +20,15 @@
                 <constraints nullable="false"/>
             </column>
             <column name="barcode" type="${type.string}">
-                <!-- <constraints nullable="false"/> -->
+                <constraints nullable="true"/>
             </column>
             <column name="scan_time" type="${type.datetime}">
-                <!-- <constraints nullable="false"/> -->
+                <constraints nullable="false"/>
             </column>
             <column name="location" type="${type.string}">
                 <!-- <constraints nullable="false"/> -->
             </column>
-            <column name="allergen_detected" type="${type.boolean}">
+            <column name="allergen_detected" type="${type.boolean}" defaultValueBoolean="false">
                 <!-- <constraints nullable="false"/> -->
             </column>
             <column name="scan_result" type="${type.longtext}">
@@ -43,6 +43,9 @@
             <column name="recommendation_response" type="${type.longtext}">
                 <!-- <constraints nullable="false"/> -->
             </column>
+            <column name="created_at" type="${type.datetime}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <!-- <constraints nullable="false"/> -->
+            </column>
         </createTable>
 
         <addForeignKeyConstraint
@@ -54,27 +57,12 @@
         onDelete="CASCADE"/>
 
         <!-- Temporarily disabled FK constraint to product table as it's in a different microservice -->
-        <!-- <addForeignKeyConstraint
+        <addForeignKeyConstraint
         baseTableName="scan_history"
         baseColumnNames="barcode"
         referencedTableName="product"
         referencedColumnNames="barcode"
         constraintName="fk_scan_history_product"
-        onDelete="CASCADE"/> -->
-    </changeSet>
-
-    <!-- Add created_at column to scan_history table -->
-    <changeSet id="scan-history-add-created-at-3" author="YanhaoSun">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="scan_history"/>
-            <not>
-                <columnExists tableName="scan_history" columnName="created_at"/>
-            </not>
-        </preConditions>
-        <addColumn tableName="scan_history">
-            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
-                <constraints nullable="false"/>
-            </column>
-        </addColumn>
+        onDelete="CASCADE"/>
     </changeSet>
 </databaseChangeLog>

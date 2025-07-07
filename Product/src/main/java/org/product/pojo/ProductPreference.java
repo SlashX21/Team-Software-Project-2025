@@ -17,14 +17,14 @@ public class ProductPreference {
     @Column(name = "user_id", nullable = false)
     private Integer userId;
     
-    @Column(name = "bar_code", nullable = false)
+    @Column(name = "barcode", nullable = false)
     private String barCode;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "preference_type", nullable = false)
     private PreferenceType preferenceType;
     
-    @Column(name = "reason", columnDefinition = "TEXT")
+    @Column(name = "reason", columnDefinition = "LONGTEXT")
     private String reason;
     
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -32,7 +32,7 @@ public class ProductPreference {
     
     // associated product entity (optional)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bar_code", referencedColumnName = "barcode", insertable = false, updatable = false)
+    @JoinColumn(name = "barcode", referencedColumnName = "barcode", insertable = false, updatable = false)
     private Product product;
     
     // default constructor

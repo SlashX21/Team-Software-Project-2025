@@ -16,8 +16,8 @@ import jakarta.persistence.Table;
 public class SugarGoals {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name="goal_id")
-    private Integer goalId;
+    @Column(name="id", nullable = false)
+    private Integer id;
 
     @Column(name="user_id", nullable = false)
     private Integer userId;
@@ -35,19 +35,16 @@ public class SugarGoals {
     @Column(name="updated_at", columnDefinition = "DATETIME")
     private String updatedAt;
 
-    @Column(name="is_active")
-    private Boolean isActive;
     
     @Override
     public String toString() {
         return "SugarGoals{" +
-                "goalId=" + goalId +
+                "id=" + id +
                 ", userId=" + userId +
                 ", dailyGoalMg=" + dailyGoalMg +
                 ", goalLevel=" + goalLevel +
                 ", createdAt='" + createdAt + '\'' +
                 ", updatedAt='" + updatedAt + '\'' +
-                ", isActive=" + isActive +
                 '}';
     }
 
@@ -57,14 +54,14 @@ public class SugarGoals {
      * @return Integer return the goalId
      */
     public Integer getGoalId() {
-        return goalId;
+        return id;
     }
 
     /**
      * @param goalId the goalId to set
      */
     public void setGoalId(Integer goalId) {
-        this.goalId = goalId;
+        this.id = goalId;
     }
 
     /**
@@ -136,19 +133,4 @@ public class SugarGoals {
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
     }
-
-    /**
-     * @return Boolean return the isActive
-     */
-    public Boolean isIsActive() {
-        return isActive;
-    }
-
-    /**
-     * @param isActive the isActive to set
-     */
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
-    }
-
 }

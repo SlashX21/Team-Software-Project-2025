@@ -30,7 +30,7 @@ public class PurchaseRecord {
     @Column(name="ocr_confidence")
     private Float ocrConfidence;
 
-    @Column(name="raw_orc_data", columnDefinition = "LONGTEXT")
+    @Column(name="raw_ocr_data", columnDefinition = "LONGTEXT")
     private String rawOcrData;
 
     @Column(name="scan_id")

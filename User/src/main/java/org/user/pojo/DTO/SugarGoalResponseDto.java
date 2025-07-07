@@ -7,17 +7,15 @@ public class SugarGoalResponseDto {
     private GoalLevel goalLevel;
     private String createdAt;
     private String updatedAt;
-    private Boolean isActive;
     
     // constructor
     public SugarGoalResponseDto() {}
     
-    public SugarGoalResponseDto(Double dailyGoalMg, GoalLevel goalLevel, String createdAt, String updatedAt, Boolean isActive) {
+    public SugarGoalResponseDto(Double dailyGoalMg, GoalLevel goalLevel, String createdAt, String updatedAt) {
         this.dailyGoalMg = dailyGoalMg;
         this.goalLevel = goalLevel;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
-        this.isActive = isActive;
     }
     public SugarGoalResponseDto(Double dailyGoalMg, String createdAt, String updatedAt) {
         this.dailyGoalMg = dailyGoalMg;
@@ -37,9 +35,6 @@ public class SugarGoalResponseDto {
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
     
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-    
     @Override
     public String toString() {
         return "SugarGoalResponseDto{" +
@@ -47,7 +42,6 @@ public class SugarGoalResponseDto {
                 ", goalLevel=" + goalLevel +
                 ", createdAt='" + createdAt + '\'' +
                 ", updatedAt='" + updatedAt + '\'' +
-                ", isActive=" + isActive +
                 '}';
     }
 } 

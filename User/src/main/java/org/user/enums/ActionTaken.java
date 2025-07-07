@@ -2,9 +2,9 @@ package org.user.enums;
 
 public enum ActionTaken {
     AVOIDED("avoided"),
-    NONE("none"),
-    REMOVE("remove"),
-    REPORT("report");
+    NO_ACTION("no_action"),
+    PURCHASED("purchased"),
+    UNKNOWN("unknown");
 
     private final String description;
 

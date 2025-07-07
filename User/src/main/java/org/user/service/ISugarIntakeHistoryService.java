@@ -3,7 +3,7 @@ package org.user.service;
 import org.user.pojo.DTO.SugarIntakeHistoryDto;
 import org.user.pojo.DTO.ResponseMessage;
 import org.user.pojo.DTO.MonthlyStatsDto;
-import org.user.enums.SourceType;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,11 +42,7 @@ public interface ISugarIntakeHistoryService {
     ResponseMessage<List<SugarIntakeHistoryDto>> getSugarIntakeRecordsByUserIdAndTimeRange(
             Integer userId, LocalDateTime startTime, LocalDateTime endTime);
     
-    /**
-     * query sugar intake records by user id and source type
-     */
-    ResponseMessage<List<SugarIntakeHistoryDto>> getSugarIntakeRecordsByUserIdAndSourceType(
-            Integer userId, SourceType sourceType);
+
     
     /**
      * calculate total sugar intake by user id and time range
@@ -125,4 +121,12 @@ public interface ISugarIntakeHistoryService {
      * get monthly sugar intake statistics
      */
     ResponseMessage<MonthlyStatsDto> getMonthlySugarStats(Integer userId, String month);
+    
+    /**
+     * get sugar intake history statistics by period
+     * @param userId user id
+     * @param period period ("week", "month", "year")
+     * @return statistics data
+     */
+    ResponseMessage<Map<String, Object>> getSugarIntakeHistoryStats(Integer userId, String period);
 } 
