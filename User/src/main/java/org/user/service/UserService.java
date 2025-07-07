@@ -121,13 +121,13 @@ public class UserService implements IUserService{
                 String severityLevel = "moderate"; // default value
                 if (userAllergen.getSeverityLevel() != null) {
                     switch (userAllergen.getSeverityLevel()) {
-                        case LOW:
+                        case MILD:
                             severityLevel = "mild";
                             break;
-                        case MEDIUM:
+                        case MODERATE:
                             severityLevel = "moderate";
                             break;
-                        case HIGH:
+                        case SEVERE:
                             severityLevel = "severe";
                             break;
                     }
@@ -164,35 +164,15 @@ public class UserService implements IUserService{
         List<UserAllergen> existingAllergens = userAllergenRepository.findByUserId(userId);
         for (UserAllergen existing : existingAllergens) {
             if (existing.getAllergenId().equals(allergenId)) {
-                // return existing allergen information instead of throwing exception
-                Map<String, Object> existingResponse = new HashMap<>();
-                existingResponse.put("userAllergenId", existing.getUserAllergenId());
-                existingResponse.put("allergenId", allergen.getAllergenId());
-                existingResponse.put("allergenName", allergen.getName());
-                existingResponse.put("category", allergen.getCategory());
+                // user already bound to this allergen, return error message
+                Map<String, Object> errorResponse = new HashMap<>();
+                errorResponse.put("success", false);
+                errorResponse.put("message", "user already bound to this allergen, cannot add again");
+                errorResponse.put("allergenId", allergenId);
+                errorResponse.put("allergenName", allergen.getName());
+                errorResponse.put("isExisting", true);
                 
-                // convert existing severity level to API format
-                String existingSeverityLevel = "moderate"; // default
-                if (existing.getSeverityLevel() != null) {
-                    switch (existing.getSeverityLevel()) {
-                        case LOW:
-                            existingSeverityLevel = "mild";
-                            break;
-                        case MEDIUM:
-                            existingSeverityLevel = "moderate";
-                            break;
-                        case HIGH:
-                            existingSeverityLevel = "severe";
-                            break;
-                    }
-                }
-                existingResponse.put("severityLevel", existingSeverityLevel);
-                existingResponse.put("confirmed", existing.isConfirmed());
-                existingResponse.put("notes", existing.getNotes() != null ? existing.getNotes() : "");
-                existingResponse.put("message", "User already has this allergen");
-                existingResponse.put("isExisting", true);
-                
-                return existingResponse;
+                return errorResponse;
             }
         }
         
@@ -201,13 +181,13 @@ public class UserService implements IUserService{
         try {
             switch (severityLevel.toLowerCase()) {
                 case "mild":
-                    severityEnum = org.allergen.enums.SeverityLevel.LOW;
+                    severityEnum = org.allergen.enums.SeverityLevel.MILD;
                     break;
                 case "moderate":
-                    severityEnum = org.allergen.enums.SeverityLevel.MEDIUM;
+                    severityEnum = org.allergen.enums.SeverityLevel.MODERATE;
                     break;
                 case "severe":
-                    severityEnum = org.allergen.enums.SeverityLevel.HIGH;
+                    severityEnum = org.allergen.enums.SeverityLevel.SEVERE;
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid severity level. Must be: mild, moderate, or severe");
@@ -229,6 +209,7 @@ public class UserService implements IUserService{
         
         // build response
         Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
         response.put("userAllergenId", savedUserAllergen.getUserAllergenId());
         response.put("allergenId", allergen.getAllergenId());
         response.put("allergenName", allergen.getName());
@@ -236,7 +217,7 @@ public class UserService implements IUserService{
         response.put("severityLevel", severityLevel);
         response.put("confirmed", savedUserAllergen.isConfirmed());
         response.put("notes", savedUserAllergen.getNotes());
-        response.put("message", "User allergen added successfully");
+        response.put("message", "allergen bound successfully");
         response.put("isExisting", false);
         
         return response;
