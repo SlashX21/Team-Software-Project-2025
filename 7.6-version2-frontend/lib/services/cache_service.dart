@@ -537,11 +537,37 @@ class CacheService {
       'summary': product.summary,
       'detailedAnalysis': product.detailedAnalysis,
       'actionSuggestions': product.actionSuggestions,
+      'barcode': product.barcode, // 包含条码信息
+      'recommendations': product.recommendations.map((rec) => {
+        'name': rec.name,
+        'imageUrl': rec.imageUrl,
+        'summary': rec.summary,
+        'detailedAnalysis': rec.detailedAnalysis,
+        'barcode': rec.barcode, // 推荐产品的条码信息
+      }).toList(),
     };
   }
 
   /// JSON转产品分析对象
   ProductAnalysis _productFromJson(Map<String, dynamic> json) {
+    // 解析推荐产品列表
+    List<ProductAnalysis> recommendations = [];
+    if (json['recommendations'] != null) {
+      final recsData = json['recommendations'] as List;
+      for (final recData in recsData) {
+        recommendations.add(ProductAnalysis(
+          name: recData['name'] ?? '',
+          imageUrl: recData['imageUrl'] ?? '',
+          ingredients: [],
+          detectedAllergens: [],
+          summary: recData['summary'] ?? '',
+          detailedAnalysis: recData['detailedAnalysis'] ?? '',
+          actionSuggestions: [],
+          barcode: recData['barcode'], // 恢复推荐产品的条码信息
+        ));
+      }
+    }
+
     return ProductAnalysis(
       name: json['name'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
@@ -550,6 +576,8 @@ class CacheService {
       summary: json['summary'] ?? '',
       detailedAnalysis: json['detailedAnalysis'] ?? '',
       actionSuggestions: List<String>.from(json['actionSuggestions'] ?? []),
+      recommendations: recommendations,
+      barcode: json['barcode'], // 恢复主产品的条码信息
     );
   }
 

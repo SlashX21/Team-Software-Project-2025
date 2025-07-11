@@ -4,6 +4,7 @@ import '../../theme/app_styles.dart';
 import '../../../services/api.dart';
 import '../../../services/user_service.dart';
 import '../../../domain/entities/product_analysis.dart';
+import '../../widgets/ingredients_display.dart';
 
 class ProductDetailPage extends StatefulWidget {
   final String? barcode;
@@ -25,11 +26,9 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     with TickerProviderStateMixin {
   ProductAnalysis? _productAnalysis;
   Map<String, dynamic>? _productData;
-  Map<String, dynamic>? _recommendation;
   List<Map<String, dynamic>> _userAllergens = [];
   List<String> _detectedAllergens = [];
   bool _isLoading = false;
-  bool _isLoadingRecommendation = false;
   String? _error;
   late TabController _tabController;
 
@@ -87,17 +86,11 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       final userId = await UserService.instance.getCurrentUserId();
       if (userId == null) return;
 
-      // 并行加载用户过敏原和产品推荐
-      final futures = await Future.wait([
-        getUserAllergens(userId),
-        widget.barcode != null 
-            ? getBarcodeRecommendation(userId, widget.barcode!)
-            : Future.value(null),
-      ]);
+      // 只加载用户过敏原，推荐数据已经包含在ProductAnalysis中
+      final userAllergens = await getUserAllergens(userId);
 
       setState(() {
-        _userAllergens = (futures[0] as List<Map<String, dynamic>>?) ?? [];
-        _recommendation = futures[1] as Map<String, dynamic>?;
+        _userAllergens = userAllergens ?? [];
         _isLoading = false;
       });
 
@@ -270,7 +263,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
           SizedBox(height: 16),
           _buildQuickNutrition(),
           SizedBox(height: 16),
-          _buildIngredients(),
+          _buildIngredientsSection(),
         ],
       ),
     );
@@ -586,37 +579,33 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
   }
 
-  Widget _buildIngredients() {
-    final ingredients = _productAnalysis?.ingredients ?? _productData?['ingredients'];
-    if (ingredients == null) return SizedBox();
-
-    return Container(
+  Widget _buildIngredientsSection() {
+    final ingredients = _productAnalysis?.ingredients ?? _extractIngredientsFromProductData();
+    
+    return IngredientsDisplay(
+      ingredients: ingredients,
+      title: "Ingredient List",
+      maxDisplayCount: 8,
       padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Ingredient List', style: AppStyles.bodyBold),
-          SizedBox(height: 12),
-          Text(
-            ingredients is List 
-                ? ingredients.join(', ')
-                : ingredients.toString(),
-            style: AppStyles.bodyRegular,
-          ),
-        ],
-      ),
     );
+  }
+
+  List<String>? _extractIngredientsFromProductData() {
+    final ingredients = _productData?['ingredients'];
+    if (ingredients == null) return null;
+
+    if (ingredients is List) {
+      return ingredients.map((e) => e.toString()).toList();
+    } else if (ingredients is String) {
+      // 如果是逗号分隔的字符串，进行分割
+      if (ingredients.contains(',')) {
+        return ingredients.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      } else {
+        return [ingredients];
+      }
+    }
+    
+    return null;
   }
 
   Widget _buildNutritionTab() {
@@ -711,16 +700,18 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
-          if (_recommendation != null) 
-            _buildRecommendationContent()
-          else
-            _buildNoRecommendation(),
+          // 使用ProductAnalysis中的LLM数据而不是重新调用API
+          _buildDetailedAnalysis(),
+          SizedBox(height: 16),
+          _buildSmartRecommendations(),
         ],
       ),
     );
   }
 
-  Widget _buildRecommendationContent() {
+  Widget _buildDetailedAnalysis() {
+    final hasDetailedAnalysis = _productAnalysis?.detailedAnalysis?.isNotEmpty == true;
+    
     return Container(
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -737,10 +728,18 @@ class _ProductDetailPageState extends State<ProductDetailPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Personalized Recommendation', style: AppStyles.bodyBold),
+          Row(
+            children: [
+              Icon(Icons.analytics, color: AppColors.primary, size: 24),
+              SizedBox(width: 8),
+              Text('Detailed Analysis', style: AppStyles.bodyBold),
+            ],
+          ),
           SizedBox(height: 16),
           Text(
-            _recommendation?['recommendation'] ?? '暂无推荐信息',
+            hasDetailedAnalysis 
+                ? _productAnalysis!.detailedAnalysis!
+                : 'No detailed analysis available.',
             style: AppStyles.bodyRegular,
           ),
         ],
@@ -748,23 +747,118 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
   }
 
-  Widget _buildNoRecommendation() {
-    return Container(
-      padding: EdgeInsets.all(40),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.lightbulb_outline, size: 80, color: AppColors.textLight),
-            SizedBox(height: 16),
-            Text('暂无推荐', style: AppStyles.h2.copyWith(color: AppColors.textLight)),
-            SizedBox(height: 8),
-            Text(
-              '完善您的个人信息和过敏原设置，\n获得更准确的个性化推荐',
-              style: AppStyles.bodyRegular.copyWith(color: AppColors.textLight),
-              textAlign: TextAlign.center,
+  Widget _buildSmartRecommendations() {
+    final hasActionSuggestions = _productAnalysis?.actionSuggestions?.isNotEmpty == true;
+    
+    if (!hasActionSuggestions) {
+      return Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 6,
+              offset: Offset(0, 2),
             ),
           ],
         ),
+        child: Column(
+          children: [
+            Icon(Icons.info_outline, color: AppColors.primary, size: 48),
+            SizedBox(height: 16),
+            Text(
+              'Smart Recommendations',
+              style: AppStyles.bodyBold.copyWith(color: AppColors.primary),
+            ),
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue.shade600, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'AI recommendations currently unavailable. The system needs more product data to provide personalized suggestions for this category.',
+                      style: AppStyles.bodyRegular.copyWith(color: Colors.blue.shade700),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: AppColors.primary, size: 24),
+              SizedBox(width: 8),
+              Text('Smart Recommendations', style: AppStyles.bodyBold),
+            ],
+          ),
+          SizedBox(height: 16),
+          ..._productAnalysis!.actionSuggestions.asMap().entries.map((entry) {
+            final index = entry.key;
+            final suggestion = entry.value;
+            return Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: AppStyles.bodyBold.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      suggestion,
+                      style: AppStyles.bodyRegular,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }

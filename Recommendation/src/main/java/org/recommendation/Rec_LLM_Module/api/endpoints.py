@@ -38,7 +38,7 @@ async def recommend_barcode_alternatives(
         # 执行推荐
         recommendation_response = await rec_engine.recommend_alternatives(internal_request)
         
-        # 转换为API响应格式
+        # 转换为API响应格式 - 修复：包含详细推荐理由
         api_data = {
             "recommendationId": recommendation_response.recommendation_id,
             "scanType": recommendation_response.scan_type,
@@ -48,14 +48,15 @@ async def recommend_barcode_alternatives(
                     "rank": rec.rank,
                     "product": _convert_product_to_api_format(rec.product),
                     "recommendationScore": rec.recommendation_score,
-                    "reasoning": rec.reasoning
+                    "reasoning": rec.reasoning,  # 简短推荐理由（用于扫描页）
+                    "detailed_reasoning": rec.detailed_reasoning,  # 详细推荐理由（用于详情页）
                 }
                 for rec in recommendation_response.recommendations
             ],
-            "llmAnalysis": {
-                "summary": recommendation_response.llm_analysis.get("summary", ""),
-                "detailedAnalysis": recommendation_response.llm_analysis.get("detailed_analysis", ""),
-                "actionSuggestions": recommendation_response.llm_analysis.get("action_suggestions", [])
+            "llmInsights": {
+                "summary": recommendation_response.llmInsights.get("summary", ""),
+                "detailedAnalysis": recommendation_response.llmInsights.get("detailedAnalysis", ""),
+                "actionSuggestions": recommendation_response.llmInsights.get("actionSuggestions", [])
             },
             "processingMetadata": recommendation_response.processing_metadata
         }
@@ -71,7 +72,7 @@ async def recommend_barcode_alternatives(
         logger.error(f"Barcode recommendation failed: {e}")
         return ApiResponse(
             success=False,
-            message="Failed to generate recommendation",
+            message="Failed to generate recommendations",
             error={
                 "code": "RECOMMENDATION_ERROR",
                 "message": str(e),

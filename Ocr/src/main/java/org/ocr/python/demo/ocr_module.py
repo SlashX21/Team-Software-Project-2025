@@ -4,7 +4,8 @@ from azure.ai.vision.imageanalysis import ImageAnalysisClient
 from azure.ai.vision.imageanalysis.models import VisualFeatures
 from azure.core.credentials import AzureKeyCredential
 
-load_dotenv()
+# 加载OCR配置文件
+load_dotenv("ocr_config.env")
 
 AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT")
 AZURE_KEY = os.getenv("AZURE_KEY")

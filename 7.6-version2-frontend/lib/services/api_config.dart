@@ -2,8 +2,8 @@ class ApiConfig {
   static const bool useMockData = false;
   
   // Different service endpoints
-  static const String hostIp = '10.0.2.2'; // 手机/模拟器调试用
-  // static const String hostIp = '127.0.0.1'; // Web端（Chrome）本地测试用
+  // static const String hostIp = '10.0.2.2'; // 手机/模拟器调试用
+  static const String hostIp = 'localhost'; // Web端（Chrome）本地测试用
 
   static String get springBootBaseUrl => 'http://$hostIp:8080';
   static String get ocrBaseUrl => 'http://$hostIp:8080';

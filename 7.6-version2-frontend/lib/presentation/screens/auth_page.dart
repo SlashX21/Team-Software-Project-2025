@@ -616,7 +616,7 @@ class _AuthPageState extends State<AuthPage> with TickerProviderStateMixin {
         
         // Secondary Button (opposite action)
         _buildAnimatedButton(
-          text: _isLogin ? 'Sign Up' : 'Log In',
+          text: _isLogin ? 'Sign up' : 'Log in',
           isPrimary: false,
           onPressed: _toggleMode,
         ),

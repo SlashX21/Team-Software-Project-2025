@@ -11,7 +11,6 @@ class NutritionGoal(Enum):
     LOSE_WEIGHT = "lose_weight"
     GAIN_MUSCLE = "gain_muscle"
     MAINTAIN = "maintain"
-    GENERAL_HEALTH = "general_health"
 
 class AllergenPresenceType(Enum):
     """过敏原包含类型"""
@@ -58,11 +57,6 @@ NUTRITION_STRATEGIES = {
         "balance_score": 0.4,        # 营养均衡
         "variety_score": 0.3,        # 营养多样性
         "natural_bonus": 0.3         # 天然成分加分
-    },
-    NutritionGoal.GENERAL_HEALTH.value: {
-        "nutrient_density": 0.4,     # 营养密度
-        "natural_bonus": 0.3,        # 天然成分
-        "balance_score": 0.3         # 营养平衡
     }
 }
 

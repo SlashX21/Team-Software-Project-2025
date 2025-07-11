@@ -41,8 +41,11 @@ class OpenAIClient:
         if not api_key:
             raise ValueError("OpenAI API密钥未配置。请设置OPENAI_API_KEY环境变量或在配置中提供。")
         
-        # 初始化OpenAI客户端
-        self.client = OpenAI(api_key=api_key)
+        # 初始化OpenAI客户端，配置超时
+        self.client = OpenAI(
+            api_key=api_key,
+            timeout=self.config.timeout
+        )
         
         # 使用用户指定的模型
         self.model = self.config.model
@@ -154,19 +157,26 @@ class OpenAIClient:
         )
 
     async def _call_openai_api(self, prompt: str, config: Dict) -> Any:
-        """调用标准OpenAI API"""
+        """调用标准OpenAI API - 增加超时控制"""
         try:
-            response = await asyncio.to_thread(
-                self.client.chat.completions.create,
-                model=config["model"],
-                messages=[
-                    {"role": "system", "content": "你是一位专业的营养师和食品安全专家。"},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=config.get("max_tokens", 400),
-                temperature=config.get("temperature", 0.7)
+            # 添加asyncio层面的超时控制
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self.client.chat.completions.create,
+                    model=config["model"],
+                    messages=[
+                        {"role": "system", "content": "你是一位专业的营养师和食品安全专家。"},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=config.get("max_tokens", 400),
+                    temperature=config.get("temperature", 0.7)
+                ),
+                timeout=self.config.timeout
             )
             return response
+        except asyncio.TimeoutError:
+            logger.error(f"OpenAI API调用超时 ({self.config.timeout}s)")
+            raise Exception(f"Request timeout after {self.config.timeout} seconds")
         except Exception as e:
             logger.error(f"OpenAI API调用失败: {e}")
             raise e

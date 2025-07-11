@@ -40,7 +40,7 @@ class UserService {
       // --- END OF MODIFICATION ---
 
       // 保存用户基本信息
-      await prefs.setInt(_keyUserId, userIdToSave); // 使用解析后的安全值
+      await prefs.setString(_keyUserId, userIdToSave.toString()); // 使用解析后的安全值
 
       // 对 username 也做类似的安全处理
       await prefs.setString(_keyUserName, userData['userName'] ?? userData['username'] ?? '');
@@ -67,7 +67,13 @@ class UserService {
       
       if (!isLoggedIn) return null;
       
-      final userId = prefs.getInt(_keyUserId);
+      // [FIX] 从SharedPreferences读取字符串，然后解析为整数
+      final userIdString = prefs.getString(_keyUserId);
+      if (userIdString == null || userIdString.isEmpty) {
+        return null;
+      }
+      final userId = int.tryParse(userIdString);
+      
       return userId != 0 ? userId : null;
     } catch (e) {
       print('Error getting current user ID: $e');
@@ -83,9 +89,14 @@ class UserService {
       
       if (!isLoggedIn) return null;
       
-      // 安全地获取用户ID，确保类型一致性
-      final userId = prefs.getInt(_keyUserId);
-      
+      // [FIX] 安全地获取用户ID，确保类型一致性
+      final userIdString = prefs.getString(_keyUserId);
+      if (userIdString == null || userIdString.isEmpty) {
+        print('⚠️ Invalid user ID found in preferences: $userIdString');
+        return null;
+      }
+      final userId = int.tryParse(userIdString);
+
       if (userId == null || userId <= 0) {
         print('⚠️ Invalid user ID found in preferences: $userId');
         return null;
@@ -108,7 +119,13 @@ class UserService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isLoggedIn = prefs.getBool(_keyIsLoggedIn) ?? false;
-      final userId = prefs.getInt(_keyUserId) ?? 0;
+      
+      // [FIX] 安全地获取用户ID，确保类型一致性
+      final userIdString = prefs.getString(_keyUserId);
+      if (userIdString == null || userIdString.isEmpty) {
+        return false;
+      }
+      final userId = int.tryParse(userIdString) ?? 0;
       
       // 检查登录状态和用户ID是否有效
       return isLoggedIn && userId > 0;
