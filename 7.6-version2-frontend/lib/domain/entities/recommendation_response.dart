@@ -32,14 +32,14 @@ class RecommendationData {
   final String scanType;
   final UserProfileSummary userProfileSummary;
   final List<RecommendedProduct> recommendations;
-  final LLMAnalysis llmAnalysis;
+  final LLMAnalysis llmInsights;
 
   RecommendationData({
     required this.recommendationId,
     required this.scanType,
     required this.userProfileSummary,
     required this.recommendations,
-    required this.llmAnalysis,
+    required this.llmInsights,
   });
 
   factory RecommendationData.fromJson(Map<String, dynamic> json) {
@@ -53,7 +53,7 @@ class RecommendationData {
       recommendations: recommendationsList
           .map((item) => RecommendedProduct.fromJson(item))
           .toList(),
-      llmAnalysis: LLMAnalysis.fromJson(json['llmAnalysis'] ?? {}),
+      llmInsights: LLMAnalysis.fromJson(json['llmInsights'] ?? {}),
     );
   }
 }

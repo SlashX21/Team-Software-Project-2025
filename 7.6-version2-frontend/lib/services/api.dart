@@ -620,44 +620,129 @@ Future<bool> removeUserAllergen(int userId, int userAllergenId) async {
   return await deleteUserAllergen(userId, userAllergenId);
 }
 
-/// Get product info and return ProductAnalysis object (compatibility method)
+
+
+/// Get product info and return ProductAnalysis object with personalized LLM recommendations
 Future<ProductAnalysis> fetchProductByBarcode(String barcode, int userId) async {
   try {
     print('🔍 API: Fetching product with barcode: $barcode, userId: $userId');
-    final product = await analyzeProduct(barcode);
-    print('📦 API: Product result - ${product?.name ?? 'null'}');
     
-    if (product != null) {
-      // 保存扫描历史
-      if (userId > 0) {
-        print('💾 API: Saving scan history for user $userId');
-        await _apiService.saveScanHistory(
-          userId: userId,
-          barcode: barcode,
-          scanTime: DateTime.now().toIso8601String(),
-          actionTaken: 'ANALYZE',
-          allergenDetected: product.detectedAllergens.isNotEmpty,
-        );
-      }
-      return product;
+    // Step 1: Get basic product information
+    final basicProduct = await analyzeProduct(barcode);
+    print('📦 API: Basic product result - ${basicProduct?.name ?? 'null'}');
+    
+    if (basicProduct == null) {
+      throw Exception('Product not found in database');
     }
+    
+    // Step 2: If user ID provided, get personalized LLM recommendations
+    if (userId > 0) {
+      try {
+        print('🤖 API: Fetching LLM recommendations for user $userId');
+        final recommendationResult = await _apiService.getBarcodeRecommendation(userId, barcode);
+        
+        print('🔍 API: Raw recommendation result: $recommendationResult');
+        
+        // Check if we have recommendation data
+        if (recommendationResult != null) {
+          print('✅ API: LLM recommendation received');
+          
+          // Extract LLM insights - try different possible data structures
+          Map<String, dynamic>? llmInsights;
+          
+          // Try correct field name 'llmAnalysis' first (from backend logs)
+          if (recommendationResult['llmAnalysis'] != null) {
+            llmInsights = recommendationResult['llmAnalysis'] as Map<String, dynamic>?;
+            print('📊 API: Found llmAnalysis field');
+          } 
+          // Fallback to old field name for compatibility
+          else if (recommendationResult['llmInsights'] != null) {
+            llmInsights = recommendationResult['llmInsights'] as Map<String, dynamic>?;
+            print('📊 API: Found llmInsights field (fallback)');
+          } 
+          // If LLM data is at root level
+          else if (recommendationResult['summary'] != null || 
+                   recommendationResult['detailedAnalysis'] != null) {
+            llmInsights = recommendationResult;
+            print('📊 API: Using recommendation result as llmInsights');
+          }
+          
+          // Extract recommendations list
+          List<ProductAnalysis> recommendationsList = [];
+          if (recommendationResult['recommendations'] != null) {
+            try {
+              final recsData = recommendationResult['recommendations'] as List;
+              print('📦 API: Found ${recsData.length} recommendations in response');
+              
+              // 解析推荐产品列表
+              for (final recData in recsData) {
+                final productData = recData['product'] as Map<String, dynamic>?;
+                if (productData != null) {
+                  final recommendedProduct = ProductAnalysis(
+                    name: productData['productName'] ?? 'Recommended Product',
+                    imageUrl: productData['imageUrl'] ?? '',
+                    ingredients: [],
+                    detectedAllergens: [],
+                    summary: recData['reasoning'] ?? 'Better nutritional value for your goals.', // 简短推荐理由
+                    detailedAnalysis: '',
+                    actionSuggestions: [],
+                    barcode: productData['barCode'], // 确保包含条码信息
+                    detailedSummary: recData['detailed_reasoning'], // 详细推荐理由
+                  );
+                  recommendationsList.add(recommendedProduct);
+                }
+              }
+              print('✅ API: Successfully parsed ${recommendationsList.length} recommendation products');
+            } catch (e) {
+              print('❌ API: Error parsing recommendations: $e');
+            }
+          } else {
+            print('⚠️ API: No recommendations field found in response');
+          }
+          
+          if (llmInsights != null) {
+            final summary = llmInsights['summary']?.toString() ?? '';
+            final detailedAnalysis = llmInsights['detailedAnalysis']?.toString() ?? '';
+            final actionSuggestions = (llmInsights['actionSuggestions'] as List?)
+                ?.map((s) => s.toString())
+                .toList() ?? <String>[];
+            
+            print('🎯 API: LLM Data Raw - Summary: "${summary}", Analysis: "${detailedAnalysis}", Actions: ${actionSuggestions.length}');
+      
+            // Create enhanced product with LLM analysis AND recommendations
+            final enhancedProduct = ProductAnalysis(
+              name: basicProduct.name,
+              imageUrl: basicProduct.imageUrl,
+              ingredients: basicProduct.ingredients,
+              detectedAllergens: basicProduct.detectedAllergens,
+              summary: summary,
+              detailedAnalysis: detailedAnalysis,
+              actionSuggestions: actionSuggestions,
+              llmAnalysis: llmInsights,
+              recommendations: recommendationsList, // 添加推荐产品列表
+            );
+            
+            print('✅ API: Enhanced product created with LLM data and ${recommendationsList.length} recommendations');
+            return enhancedProduct;
+          } else {
+            print('⚠️ API: No LLM insights found in recommendation data');
+          }
+        } else {
+          print('⚠️ API: No recommendation data received from LLM service');
+        }
+      } catch (e) {
+        print('❌ API: Error fetching LLM recommendations: $e');
+      }
+      }
+      
+    // Return basic product if no LLM data available
+    print('📦 API: Returning basic product without LLM enhancement');
+    return basicProduct;
+    
   } catch (e) {
-    print("❌ API: Error fetching product: $e");
-    print("❌ API: Error type: ${e.runtimeType}");
-    print("❌ API: Error details: ${e.toString()}");
+    print("❌ API: Error in fetchProductByBarcode: $e");
+    rethrow;
   }
-  
-  // 返回默认产品分析
-  print('⚠️ API: Returning default product analysis for barcode: $barcode');
-  return ProductAnalysis(
-    name: 'Unknown Product',
-    imageUrl: '',
-    ingredients: [],
-    detectedAllergens: [],
-    summary: 'Unable to retrieve product information',
-    detailedAnalysis: 'Please check if the barcode is correct',
-    actionSuggestions: ['Please enter product information manually'],
-  );
 }
 
 /// Upload receipt image (compatibility method)

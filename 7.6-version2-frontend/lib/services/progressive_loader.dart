@@ -158,110 +158,40 @@ class ProgressiveLoader {
     String key,
   ) async {
     final monitor = PerformanceMonitor();
+    final errorHandler = ErrorHandler();
 
     try {
       monitor.startTimer('recommendations_fetch');
       
       // Try to get complete product information within timeout (including LLM recommendations)
       final completeProduct = await fetchProductByBarcode(barcode, userId)
-          .timeout(Duration(seconds: 5), onTimeout: () {
+          .timeout(Duration(seconds: 30), onTimeout: () {
         print('⏰ LLM recommendations timed out after 5 seconds');
-        throw TimeoutException('LLM recommendations timed out', Duration(seconds: 5));
+        // Return a product with a timeout message instead of throwing an error.
+        return basicProduct.copyWith(
+          summary: 'AI Analysis Failed',
+          detailedAnalysis: 'The request for AI-powered analysis timed out. Please check the AI service or try again later.',
+        );
       });
       
       final recDuration = monitor.endTimer('recommendations_fetch');
 
-      // If LLM recommendations were obtained, use complete data; otherwise use enhanced basic data
-      final enhancedProduct = _enhanceProductWithFallback(completeProduct, basicProduct);
+      // Use complete product data from recommendation system
+      _completeLoading(controller, key, completeProduct, recDuration);
 
-      _completeLoading(controller, key, enhancedProduct, recDuration);
-
-    } on TimeoutException catch (e) {
-      // LLM recommendations timed out, use local enhanced data
-      print('⏰ LLM timeout, using fallback recommendations: $e');
-      final fallbackProduct = _createFallbackRecommendations(basicProduct);
-      
-      final partialCompleteState = ProductLoadingState(
-        stage: LoadingStage.completed,
-        progress: 1.0,
-        message: 'Loading complete (using local recommendations)',
-        product: fallbackProduct,
-        loadTime: Duration(seconds: 5),
-        hasPartialData: true,
-      );
-      _loadingStates[key] = partialCompleteState;
-      controller.add(partialCompleteState);
-      controller.close();
-      _controllers.remove(key);
-      
     } catch (e) {
-      // Recommendation loading failed, but keep basic information
+      // Recommendation loading failed, but we have basic data, so we proceed.
       print('❌ Recommendations failed to load: $e');
       
-      final fallbackProduct = _createFallbackRecommendations(basicProduct);
-      
-      final partialCompleteState = ProductLoadingState(
-        stage: LoadingStage.completed,
-        progress: 1.0,
-        message: 'Loading complete (personalized recommendations temporarily unavailable)',
-        product: fallbackProduct,
-        loadTime: Duration.zero,
-        hasPartialData: true,
+      final productWithError = basicProduct.copyWith(
+        summary: 'AI Analysis Failed',
+        detailedAnalysis: 'Could not retrieve AI-powered analysis due to an error. Please check the AI service.',
       );
-      _loadingStates[key] = partialCompleteState;
-      controller.add(partialCompleteState);
-      controller.close();
-      _controllers.remove(key);
+
+      _completeLoading(controller, key, productWithError, Duration.zero);
     }
   }
 
-  /// Enhance product information, combining LLM and basic data
-  ProductAnalysis _enhanceProductWithFallback(ProductAnalysis? llmProduct, ProductAnalysis basicProduct) {
-    if (llmProduct != null && 
-        (llmProduct.summary.isNotEmpty || 
-         llmProduct.detailedAnalysis.isNotEmpty || 
-         llmProduct.actionSuggestions.isNotEmpty)) {
-      // LLM data available, use LLM data
-      return llmProduct;
-    }
-    
-    // LLM data not available, use local enhancement
-    return _createFallbackRecommendations(basicProduct);
-  }
-
-  /// Create local fallback recommendations
-  ProductAnalysis _createFallbackRecommendations(ProductAnalysis basicProduct) {
-    String summary = 'Product information loaded successfully.';
-    String detailedAnalysis = '';
-    List<String> suggestions = [];
-
-    // Generate simple recommendations based on ingredients and allergens
-    if (basicProduct.detectedAllergens.isNotEmpty) {
-              summary += 'Allergens detected: ${basicProduct.detectedAllergens.join(', ')}.';
-              suggestions.add('If you are allergic to ${basicProduct.detectedAllergens.join(', ')}, please avoid consuming this product');
-    } else {
-              summary += 'No common allergens detected.';
-    }
-
-    if (basicProduct.ingredients.isNotEmpty) {
-      detailedAnalysis = 'Main ingredients include: ${basicProduct.ingredients.take(5).join(', ')}';
-      if (basicProduct.ingredients.length > 5) {
-                  detailedAnalysis += ' and ${basicProduct.ingredients.length - 5} more ingredients';
-      }
-              suggestions.add('Please check the complete ingredient list');
-              suggestions.add('Consume in moderation as part of a balanced diet');
-    }
-
-    if (suggestions.isEmpty) {
-      suggestions.addAll(['Consume in moderation', 'Maintain nutritional balance', 'Consult a professional if you have questions']);
-    }
-
-    return basicProduct.copyWith(
-      summary: summary,
-      detailedAnalysis: detailedAnalysis,
-      actionSuggestions: suggestions,
-    );
-  }
 
   /// Complete loading process
   void _completeLoading(
@@ -362,6 +292,8 @@ extension ProductAnalysisExtension on ProductAnalysis {
     String? summary,
     String? detailedAnalysis,
     List<String>? actionSuggestions,
+    List<ProductAnalysis>? recommendations,
+    String? barcode,
   }) {
     return ProductAnalysis(
       name: name ?? this.name,
@@ -371,6 +303,8 @@ extension ProductAnalysisExtension on ProductAnalysis {
       summary: summary ?? this.summary,
       detailedAnalysis: detailedAnalysis ?? this.detailedAnalysis,
       actionSuggestions: actionSuggestions ?? this.actionSuggestions,
+      recommendations: recommendations ?? this.recommendations,
+      barcode: barcode ?? this.barcode,
     );
   }
 }

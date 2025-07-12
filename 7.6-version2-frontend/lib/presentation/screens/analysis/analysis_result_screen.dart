@@ -172,40 +172,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     }
   }
 
-  /// 检查当前分析数据是否来自真实的LLM服务
-  bool _isRealLLMData() {
-    final llmAnalysis = _recommendationData?.data?.llmAnalysis;
-    if (llmAnalysis == null) return false;
-    
-    // 检查是否包含fallback内容的特征文本
-    final summary = llmAnalysis.summary.toLowerCase();
-    final detailedAnalysis = llmAnalysis.detailedAnalysis.toLowerCase(); // This line is now correct
-    
-    final fallbackKeywords = [
-      'temporarily unavailable',
-      'basic analysis',
-      'ai recommendations currently unavailable',
-      'network issues',
-      'service unavailable',
-      'check your internet connection',
-    ];
-    
-    // 如果包含fallback关键词，说明不是真实LLM数据
-    for (final keyword in fallbackKeywords) {
-      if (summary.contains(keyword) || detailedAnalysis.contains(keyword)) {
-        return false;
-      }
-    }
-    
-    // 如果summary或detailedAnalysis为空或过短，可能也是fallback
-    if (summary.isEmpty || detailedAnalysis.isEmpty || 
-        summary.length < 20 || detailedAnalysis.length < 20) {
-      return false;
-    }
-    
-    return true;
-  }
-
   /// 导航到产品详情页面
   void _navigateToProductDetail() {
     if (_currentAnalysis == null) return;
@@ -228,7 +194,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
 
   /// 获取商品推荐
   Future<void> _getRecommendations(String barcode) async {
-    // 避免重复请求
+    // 推荐数据已经集成在fetchProductByBarcode中，这里不需要单独获取
+    // 只需要从推荐系统获取推荐产品列表数据
     if (_isLoadingRecommendation) return;
 
     setState(() {
@@ -247,19 +214,38 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
         return;
       }
 
+      print('🔍 Analysis: Fetching recommendation data for barcode: $barcode');
       final recommendationData = await getBarcodeRecommendation(userId, barcode);
+      
+      print('🔍 Analysis: Raw recommendation response: $recommendationData');
+
+      if (recommendationData != null) {
+        // 直接使用返回的数据构建推荐响应
+        final responseData = {
+          'success': true,
+          'message': 'Recommendations retrieved successfully',
+          'data': recommendationData,
+        };
 
       setState(() {
-        _recommendationData = recommendationData != null 
-            ? RecommendationResponse.fromJson(recommendationData)
-            : null;
+          _recommendationData = RecommendationResponse.fromJson(responseData);
         _isLoadingRecommendation = false;
       });
+        
+        print('✅ Analysis: Successfully parsed ${_recommendationData?.data?.recommendations?.length ?? 0} recommendations');
+      } else {
+        setState(() {
+          _recommendationData = null;
+          _isLoadingRecommendation = false;
+        });
+        print('⚠️ Analysis: No recommendation data received');
+      }
     } catch (e) {
       setState(() {
         _recommendationError = e.toString();
         _isLoadingRecommendation = false;
       });
+      print('❌ Analysis: Error fetching recommendations: $e');
     }
   }
 
@@ -329,7 +315,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              _receiptItems.isNotEmpty ? 'Receipt Scanner' : 'Product Scanner',
+              _receiptItems.isNotEmpty ? 'Receipt Analysis' : 'Product Analysis',
               style: AppStyles.h2.copyWith(color: AppColors.white),
             ),
             if (_currentAnalysis != null && !_showScanner)
@@ -337,7 +323,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 _currentAnalysis!.name,
                 style: AppStyles.bodyRegular.copyWith(
                   color: AppColors.white.withOpacity(0.8),
-                  fontSize: 14,
                 ),
               ),
           ],
@@ -495,13 +480,13 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Scan or upload receipt',
-              style: AppStyles.bodyBold,
+              'Scan Product Barcode',
+              style: AppStyles.h2,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Analyze ingredients and get health insights',
+              'Get AI-powered nutrition analysis and personalized recommendations',
               style: AppStyles.bodyRegular.copyWith(
                 color: AppColors.textLight,
               ),
@@ -598,7 +583,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     Icon(
                         Icons.receipt_long, color: AppColors.primary, size: 24),
                     const SizedBox(width: 8),
-                    Text('Purchase Summary', style: AppStyles.h2),
+                    Text('Receipt Analysis', style: AppStyles.h2),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -749,13 +734,11 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: AppColors.primary, size: 24),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text("Product Information", style: AppStyles.h2)),
+                  Expanded(child: Text(_currentAnalysis!.name, style: AppStyles.h1)),
                   ElevatedButton.icon(
                     onPressed: () => _navigateToProductDetail(),
                     icon: Icon(Icons.visibility, size: 16),
-                    label: Text("详情", style: TextStyle(fontSize: 12)),
+                    label: Text("详情", style: AppStyles.bodyRegular),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
@@ -814,7 +797,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                         Icon(
                             Icons.list_alt, color: AppColors.primary, size: 20),
                         const SizedBox(width: 8),
-                        Text("Ingredients", style: AppStyles.bodyBold),
+                        Text("Product Ingredients", style: AppStyles.bodyBold),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -839,20 +822,21 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
 
   /// 推荐功能主入口组件
   Widget _buildRecommendationSection() {
-    if (_isLoadingRecommendation) {
-      return _buildRecommendationLoading();
-    } else if (_recommendationError != null) {
-      return _buildRecommendationError();
-    } else if (_recommendationData != null) {
       return Column(
         children: [
-          _buildRecommendationsList(),
+        // 始终显示AI营养分析
           _buildLLMAnalysisCard(),
-        ],
-      );
-    }
-    // 没有推荐数据时不显示任何内容
-    return const SizedBox.shrink();
+        // 只有在有推荐数据时才显示推荐列表
+        if (_recommendationData != null && _recommendationData!.data?.recommendations.isNotEmpty == true)
+          _buildRecommendationsList(),
+        // 如果正在加载推荐，显示加载状态（但AI分析已经可见）
+        if (_isLoadingRecommendation && _recommendationData == null)
+          _buildRecommendationLoading(),
+        // 如果推荐失败，显示错误（但AI分析已经可见）
+        if (_recommendationError != null && _recommendationData == null)
+          _buildRecommendationError(),
+      ],
+    );
   }
 
   /// 推荐加载状态组件
@@ -896,7 +880,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
             '这可能需要一些时间，请耐心等待',
             style: AppStyles.bodyRegular.copyWith(
               color: AppColors.textLight,
-              fontSize: 12,
             ),
             textAlign: TextAlign.center,
           ),
@@ -913,10 +896,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.alert.withOpacity(0.3),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -926,74 +905,36 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.error_outline, color: AppColors.alert, size: 24),
-              const SizedBox(width: 8),
+          Icon(Icons.error_outline, color: AppColors.alert, size: 48),
+          const SizedBox(height: 16),
               Text(
-                '推荐获取失败',
-                style: AppStyles.bodyBold.copyWith(color: AppColors.alert),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.alert.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              _recommendationError!,
-              style: AppStyles.bodyRegular.copyWith(
-                color: AppColors.alert,
-                fontSize: 12,
-              ),
-            ),
+            _recommendationError ?? 'Unable to load recommendations',
+            style: AppStyles.bodyRegular.copyWith(color: AppColors.alert),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  /// 推荐商品列表组件
-  /// 推荐商品列表组件
+  /// 推荐列表组件 - 修正数据访问逻辑
   Widget _buildRecommendationsList() {
-    // Safely get the list of recommendations from the response data
-    final recommendations = _recommendationData?.data?.recommendations ?? [];
-
-    if (recommendations.isEmpty) {
-      // Display a message if there are no recommendations
-      return Container(
-        margin: const EdgeInsets.only(top: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.lightbulb_outline, color: AppColors.textLight, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              'No suitable recommendations found', // Translated
-              style: AppStyles.bodyRegular.copyWith(color: AppColors.textLight),
-            ),
-          ],
-        ),
-      );
+    // 检查推荐数据
+    final recommendationData = _recommendationData?.data;
+    if (recommendationData == null) {
+      print('❌ Analysis: No recommendation data available');
+      return _buildRecommendationFallback();
     }
 
-    // Build the list if there are recommendations
+    final recommendations = recommendationData.recommendations;
+    if (recommendations.isEmpty) {
+      print('⚠️ Analysis: Empty recommendations list');
+      return _buildRecommendationFallback();
+    }
+
+    print('✅ Analysis: Displaying ${recommendations.length} recommendations');
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(20),
@@ -1013,45 +954,54 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, color: Colors.green, size: 24),
+              Icon(Icons.recommend, color: Colors.green, size: 24),
               const SizedBox(width: 8),
-              Text('💡 Recommended Alternatives', style: AppStyles.h2),
-              // Translated
+              Text('Smart Recommendations', style: AppStyles.h2),
+              const Spacer(),
+              // 推荐数量标识
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${recommendations.length} found',
+                  style: AppStyles.bodyRegular.copyWith(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
-          // Map through the recommendations to create a card for each
-          ...recommendations.map((recommendation) =>
-              Container(
+          ...recommendations.map((recommendation) => Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.05),
+                  color: AppColors.background,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.green.withOpacity(0.2),
-                    width: 1,
-                  ),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Rank
+                        // Rank badge
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          width: 24,
+                          height: 24,
                           decoration: BoxDecoration(
                             color: Colors.green,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Center(
                           child: Text(
                             '#${recommendation.rank}',
                             style: AppStyles.bodyBold.copyWith(
                               color: Colors.white,
-                              fontSize: 12,
+                              ),
                             ),
                           ),
                         ),
@@ -1071,8 +1021,22 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                                   recommendation.productInfo.brand!,
                                   style: AppStyles.bodyRegular.copyWith(
                                     color: AppColors.textLight,
-                                    fontSize: 12,
                                   ),
+                                ),
+                              const SizedBox(height: 2),
+                              // Barcode display
+                              Row(
+                                children: [
+                                  Icon(Icons.qr_code, size: 14, color: AppColors.textLight),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    recommendation.productInfo.barcode ?? 'No barcode',
+                                    style: AppStyles.bodyRegular.copyWith(
+                                      color: AppColors.textLight,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                ],
                                 ),
                               const SizedBox(height: 4),
                               // Nutrition summary
@@ -1080,7 +1044,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                                 recommendation.productInfo.getSummaryText(),
                                 style: AppStyles.bodyRegular.copyWith(
                                   color: Colors.green.shade700,
-                                  fontSize: 12,
                                 ),
                               ),
                             ],
@@ -1095,40 +1058,38 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            'Score: ${(recommendation.score * 100)
-                                .toStringAsFixed(0)}', // Translated
+                            'Score: ${(recommendation.score * 100).toStringAsFixed(0)}',
                             style: AppStyles.bodyBold.copyWith(
                               color: Colors.green.shade700,
-                              fontSize: 12,
                             ),
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Recommendation reason
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.recommend, color: Colors.green, size: 16),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              recommendation.reason,
-                              style: AppStyles.bodyRegular.copyWith(
-                                fontSize: 12,
-                                color: Colors.green.shade800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // 移除推荐理由显示 - 只在详情页显示推荐理由
+                    // 注释掉原本的推荐理由显示代码
+                    // Container(
+                    //   padding: const EdgeInsets.all(8),
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.green.withOpacity(0.1),
+                    //     borderRadius: BorderRadius.circular(6),
+                    //   ),
+                    //   child: Row(
+                    //     children: [
+                    //       Icon(Icons.recommend, color: Colors.green, size: 16),
+                    //       const SizedBox(width: 6),
+                    //       Expanded(
+                    //         child: Text(
+                    //           recommendation.reason,
+                    //           style: AppStyles.bodyRegular.copyWith(
+                    //             color: Colors.green.shade800,
+                    //           ),
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
                   ],
                 ),
               )).toList(),
@@ -1137,16 +1098,62 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     );
   }
 
-  /// LLM分析结果组件
-  /// LLM分析结果组件
-  Widget _buildLLMAnalysisCard() {
-    // Safely get the LLM analysis from the response data
-    final llmAnalysis = _recommendationData?.data?.llmAnalysis;
+  /// 推荐数据不可用时的后备显示
+  Widget _buildRecommendationFallback() {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.info_outline, color: Colors.blue, size: 48),
+          const SizedBox(height: 16),
+                    Container(
+            padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                Icon(Icons.shopping_cart, color: Colors.blue, size: 20),
+                const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                    'AI recommendations currently unavailable. The system needs more product data to provide personalized suggestions for this category.',
+                    style: AppStyles.bodyRegular.copyWith(color: Colors.blue.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+        ],
+      ),
+    );
+  }
 
-    // If there is no analysis data, show nothing
-    if (llmAnalysis == null) {
+  /// 结构化LLM分析结果显示 - 固定格式，显示所有字段状态
+  Widget _buildLLMAnalysisCard() {
+    // 总是显示AI Analysis卡片，不进行任何数据验证
+    if (_currentAnalysis == null) {
       return const SizedBox.shrink();
     }
+
+    // 获取原始数据，不做任何过滤或验证
+    final summary = _currentAnalysis!.summary;
+    final detailedAnalysis = _currentAnalysis!.detailedAnalysis;
+    final actionSuggestions = _currentAnalysis!.actionSuggestions;
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -1165,116 +1172,185 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 标题行
           Row(
             children: [
               Icon(Icons.psychology, color: Colors.orange, size: 24),
               const SizedBox(width: 8),
-              Text('AI suggestions', style: AppStyles.h2),
+              Text('AI Analysis', style: AppStyles.h2),
               const Spacer(),
-              // Data source indicator
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _isRealLLMData() ? Colors.green.withOpacity(0.2) : Colors.grey.withOpacity(0.2),
+                  color: Colors.purple.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Structured View',
+                      style: AppStyles.bodyRegular.copyWith(
+                    color: Colors.purple.shade700,
+                        fontWeight: FontWeight.w600,
+                  ),
+                      ),
+                    ),
+                  ],
+                ),
+          const SizedBox(height: 16),
+
+          // 扫描页面简化显示：只显示Summary
+          _buildAnalysisField(
+            icon: Icons.summarize,
+            title: 'Summary',
+            content: summary,
+            color: Colors.orange,
+            fieldKey: 'summary',
+              ),
+            ],
+          ),
+    );
+  }
+
+  /// 构建单个分析字段显示
+  Widget _buildAnalysisField({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color color,
+    required String fieldKey,
+    bool isList = false,
+    List<String>? listItems,
+  }) {
+    // 判断字段状态
+    bool hasContent = content.isNotEmpty;
+    bool isMeaningful = hasContent && content.length > 5 && content != 'null';
+
+    return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isMeaningful ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+          // 字段标题和状态
+          Row(
+            children: [
+              Icon(
+                icon, 
+                color: isMeaningful ? color : Colors.grey, 
+                size: 18
+              ),
+              const SizedBox(width: 6),
+                Text(
+                title,
+                  style: AppStyles.bodyBold.copyWith(
+                  color: isMeaningful ? color : Colors.grey.shade600,
+                  ),
+                ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _getStatusColor(isMeaningful, hasContent).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      _isRealLLMData() ? Icons.cloud_done : Icons.cloud_off,
+                      _getStatusIcon(isMeaningful, hasContent),
                       size: 12,
-                      color: _isRealLLMData() ? Colors.green.shade700 : Colors.grey.shade600,
+                      color: _getStatusColor(isMeaningful, hasContent),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      _isRealLLMData() ? 'AI Active' : 'Basic Mode',
-                      style: AppStyles.bodyRegular.copyWith(
-                        fontSize: 10,
-                        color: _isRealLLMData() ? Colors.green.shade700 : Colors.grey.shade600,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Analysis Summary
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
                 Text(
-                  'Analysis Summary', // Translated
-                  style: AppStyles.bodyBold.copyWith(
-                    color: Colors.orange.shade700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  llmAnalysis.summary,
+                      _getStatusText(isMeaningful, hasContent),
                   style: AppStyles.bodyRegular.copyWith(
-                    color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w600,
+                        color: _getStatusColor(isMeaningful, hasContent),
                   ),
                 ),
               ],
             ),
           ),
-
-          // Action Suggestions
-          if (llmAnalysis.actionSuggestions.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Text(
-              'Action Suggestions', // Translated
-              style: AppStyles.bodyBold.copyWith(
-                color: Colors.orange.shade700,
-              ),
+            ],
             ),
             const SizedBox(height: 8),
-            ...llmAnalysis.actionSuggestions.map((suggestion) =>
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: Colors.orange.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
+          
+          // 字段内容
+          if (isMeaningful) ...[
+            if (isList && listItems != null && listItems.isNotEmpty) ...[
+              ...listItems.map((item) => 
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.orange,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
+                      Icon(Icons.arrow_right, color: color, size: 16),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          suggestion,
-                          style: AppStyles.bodyRegular.copyWith(
-                            fontSize: 12,
-                            color: Colors.orange.shade800,
-                          ),
+                          item,
+                          style: AppStyles.bodyRegular,
                         ),
                       ),
                     ],
                   ),
-                )).toList(),
-          ],
+                ),
+              ).toList(),
+            ] else ...[
+              Text(
+                content,
+                style: AppStyles.bodyRegular,
+              ),
+            ],
+          ] else ...[
+            Text(
+              hasContent ? 'Placeholder content: "$content"' : 'No data available',
+              style: AppStyles.bodyRegular.copyWith(
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+          
+          // 原始数据长度信息（调试用）
+          const SizedBox(height: 4),
+          Text(
+            'Field: $fieldKey | Length: ${content.length} chars',
+            style: AppStyles.bodyRegular.copyWith(
+              color: Colors.grey.shade500,
+              fontFamily: 'monospace',
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  /// 获取状态颜色
+  Color _getStatusColor(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return Colors.green;
+    if (hasContent) return Colors.orange;
+    return Colors.grey;
+  }
+
+  /// 获取状态图标
+  IconData _getStatusIcon(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return Icons.check_circle;
+    if (hasContent) return Icons.warning;
+    return Icons.help_outline;
+  }
+
+  /// 获取状态文本
+  String _getStatusText(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return 'DATA';
+    if (hasContent) return 'PLACEHOLDER';
+    return 'EMPTY';
   }
 }

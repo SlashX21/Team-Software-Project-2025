@@ -14,13 +14,14 @@ import '../../../services/performance_monitor.dart';
 import '../../../services/error_handler.dart';
 import '../../../services/progressive_loader.dart';
 import '../../widgets/enhanced_loading.dart';
+import '../recommendation/recommendation_detail_screen.dart';
+import '../../widgets/ingredients_display.dart';
 
 class BarcodeScannerScreen extends StatefulWidget {
   final int userId;
   final ProductAnalysis? productAnalysis;
 
   const BarcodeScannerScreen({Key? key, this.productAnalysis, required this.userId}) : super(key: key);
-
   @override
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
@@ -48,20 +49,38 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   StreamSubscription<ProductLoadingState>? _loadingSubscription;
   String? _errorMsg; // 新增错误信息字段
   String? _lastConfirmedBarcode;
+  Map<String, dynamic>? _recommendationData;
+  
+  // 用户过敏原状态
+  List<String> _userAllergens = [];
+  bool _userAllergensLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _currentAnalysis = widget.productAnalysis;
     _showScanner = true;
+    _loadUserAllergens(); // 加载用户过敏原
     
+    // 延迟初始化controller，避免立即启动导致的问题
+    _initializeController();
+  }
+
+  /// 安全初始化控制器
+  Future<void> _initializeController() async {
     try {
+      // 如果controller已存在，先清理
+      if (_controller != null) {
+        await _controller?.dispose();
+        _controller = null;
+      }
+      
       _controller = MobileScannerController(
         detectionSpeed: DetectionSpeed.normal,
         facing: CameraFacing.back,
         torchEnabled: false,
         returnImage: false,
-        autoStart: true,
+        autoStart: false, // 改为手动启动，避免重复启动问题
         detectionTimeoutMs: 200,
         formats: [
           BarcodeFormat.ean13,
@@ -76,10 +95,92 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           BarcodeFormat.qrCode,
         ],
       );
-      print('✅ MobileScannerController created successfully with optimized settings');
+      
+      // 等待一帧后再启动，确保widget已完全构建
+      await Future.delayed(Duration(milliseconds: 100));
+      if (!_disposed && mounted) {
+        await _controller?.start();
+        print('✅ MobileScannerController created and started successfully');
+      }
     } catch (e) {
       print('❌ Error creating MobileScannerController: $e');
+      if (!_disposed && mounted) {
+        _safeSetState(() {
+          _errorMsg = 'Camera initialization failed. Please restart the app.';
+        });
+      }
     }
+  }
+
+  /// 加载用户过敏原信息
+  Future<void> _loadUserAllergens() async {
+    try {
+      final allergenData = await getUserAllergens(widget.userId);
+      if (allergenData != null && !_disposed) {
+        setState(() {
+          _userAllergens = allergenData
+              .map((allergen) => allergen['name']?.toString() ?? '')
+              .where((name) => name.isNotEmpty)
+              .toList();
+          _userAllergensLoaded = true;
+        });
+        print('✅ Loaded user allergens: $_userAllergens');
+      } else {
+        setState(() {
+          _userAllergensLoaded = true;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading user allergens: $e');
+      setState(() {
+        _userAllergensLoaded = true;
+      });
+    }
+  }
+
+  /// 获取用户相关的过敏原（产品过敏原与用户过敏原的交集）
+  List<String> _getUserRelevantAllergens() {
+    if (_currentAnalysis == null || !_userAllergensLoaded) {
+      return [];
+    }
+    
+    return _currentAnalysis!.detectedAllergens
+        .where((allergen) => _userAllergens.contains(allergen))
+        .toList();
+  }
+
+  /// 构建用户相关的过敏原警告UI
+  List<Widget> _buildUserRelevantAllergenWarning() {
+    if (!_userAllergensLoaded) {
+      // 加载中状态
+      return [
+        _buildInfoCard(
+          title: "Allergen Check",
+          content: "Checking allergen compatibility...",
+          icon: Icons.hourglass_empty,
+          color: Colors.grey,
+        ),
+        SizedBox(height: 12),
+      ];
+    }
+
+    final relevantAllergens = _getUserRelevantAllergens();
+    
+    if (relevantAllergens.isEmpty) {
+      // 没有用户相关的过敏原，不显示警告
+      return [];
+    }
+
+    // 显示用户相关的过敏原警告
+    return [
+      _buildInfoCard(
+        title: "🚨 Allergen Warning",
+        content: "Contains ${relevantAllergens.join(', ')} - Personal allergy match detected!",
+        icon: Icons.warning,
+        color: AppColors.alert,
+      ),
+      SizedBox(height: 12),
+    ];
   }
 
   Future<void> _onBarcodeScanned(BarcodeCapture capture) async {
@@ -138,7 +239,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       print('🗑️ Cleared local cache');
       
       // 获取用户ID
-      final userId = await UserService.instance.getCurrentUserId() ?? widget.userId;
+      final dynamic rawUserId = await UserService.instance.getCurrentUserId() ?? widget.userId;
+      int userId;
+      if (rawUserId is String) {
+        userId = int.tryParse(rawUserId) ?? widget.userId;
+      } else if (rawUserId is int) {
+        userId = rawUserId;
+      } else {
+        userId = widget.userId;
+      }
       print('👤 Using userId: $userId');
       
       // 取消之前的加载
@@ -223,6 +332,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         _isLoading = false;
         _isProcessing = false;
         _errorMsg = null;
+        _recommendationData = state.product?.llmAnalysis;
         
         // 缓存结果到本地
         final barcode = state.product?.name ?? 'unknown';
@@ -260,16 +370,27 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       _currentAnalysis = null;
       _scannedOnce = true;
       _errorMsg = msg;
+      _showScanner = false; // 显示错误页面而不是扫描器
     });
     
     final errorHandler = ErrorHandler();
     final errorResult = errorHandler.handleApiError(error, context: 'product');
     
-    errorHandler.showErrorSnackBar(
-      context,
-      errorResult,
-      onRetry: errorResult.canRetry ? () => _processBarcodeData(_loadingState?.product?.name ?? 'unknown') : null,
+    // 显示错误提示，提供重试选项
+    if (errorResult.canRetry && _lastConfirmedBarcode != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: AppColors.alert,
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () => _processBarcodeData(_lastConfirmedBarcode!),
+          ),
+          duration: Duration(seconds: 5),
+        ),
     );
+    }
   }
   
   String _getLoadingSecondaryMessage() {
@@ -300,18 +421,100 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       setState(fn);
     }
   }
+  
+  /// 统一的卡片标题样式
+  Widget _buildCardTitle({
+    required IconData icon,
+    required String title,
+    Color? iconColor,
+  }) {
+    return Row(
+      children: [
+        Icon(
+          icon, 
+          color: iconColor ?? AppColors.primary, 
+          size: 20, // 统一图标尺寸
+        ),
+        SizedBox(width: 8),
+        Text(
+          title,
+          style: AppStyles.bodyBold.copyWith(
+            color: AppColors.primary,
+            fontSize: 16, // 统一字体大小
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// 安全重启摄像头
+  Future<void> _safeRestartCamera() async {
+    try {
+      // 检查控制器状态
+      if (_controller == null) {
+        print('🔄 Controller is null, reinitializing...');
+        await _initializeController();
+        return;
+      }
+      
+      // 安全停止现有会话
+      try {
+        await _controller?.stop();
+        print('🛑 Camera stopped successfully');
+      } catch (e) {
+        print('⚠️ Error stopping camera (continuing anyway): $e');
+      }
+      
+      // 等待短暂延迟后重启
+      await Future.delayed(Duration(milliseconds: 500));
+      
+      if (!_disposed && mounted) {
+        try {
+          await _controller?.start();
+          print('🎥 Camera restarted successfully');
+        } catch (e) {
+          print('❌ Error restarting camera: $e');
+          // 如果重启失败，尝试重新初始化
+          await _initializeController();
+        }
+      }
+    } catch (e) {
+      print('❌ Error in _safeRestartCamera: $e');
+      if (!_disposed && mounted) {
+        _safeSetState(() {
+          _errorMsg = 'Camera restart failed. Please try again.';
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
     _disposed = true;
     _debounceTimer?.cancel();
-    _controller?.dispose();
     _loadingSubscription?.cancel();
+    
+    // 安全停止并清理控制器
+    _cleanupController();
     
     // Print performance summary
     PerformanceMonitor().printSummary();
     
     super.dispose();
+  }
+  
+  /// 安全清理控制器
+  Future<void> _cleanupController() async {
+    try {
+      if (_controller != null) {
+        await _controller?.stop();
+        await _controller?.dispose();
+        _controller = null;
+        print('🧹 Controller cleaned up successfully');
+      }
+    } catch (e) {
+      print('⚠️ Error cleaning up controller: $e');
+    }
   }
 
   Future<void> _uploadReceipt() async {
@@ -376,8 +579,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           icon: Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () async {
             if (!_showScanner) {
-              // 结果页返回，切换回扫码状态并重启摄像头
-              setState(() {
+              // 结果页返回，切换回扫码状态并安全重启摄像头
+              _safeSetState(() {
                 _showScanner = true;
                 _receiptItems.clear();
                 _currentAnalysis = null;
@@ -388,9 +591,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 _detectionCount.clear();
                 _lastConfirmedBarcode = null;
               });
-              await _controller?.start();
+              
+              // 安全重启摄像头
+              await _safeRestartCamera();
             } else {
-              // 扫码页返回，正常pop
+              // 扫码页返回，停止摄像头并退出
+              await _controller?.stop();
               Navigator.pop(context);
             }
           },
@@ -650,10 +856,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       padding: const EdgeInsets.all(20),
       children: [
         _buildProductInfo(),
-        if (_currentAnalysis!.summary.isNotEmpty ||
-            _currentAnalysis!.detailedAnalysis.isNotEmpty ||
-            _currentAnalysis!.actionSuggestions.isNotEmpty)
-          _buildAIInsights(),
+        _buildAIInsights(),
         SizedBox(height: 24),
         _buildRescanButton(),
       ],
@@ -667,12 +870,37 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         children: [
           Icon(Icons.error_outline, size: 64, color: AppColors.alert),
           SizedBox(height: 16),
-          Text(
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
             _errorMsg!,
-            style: AppStyles.bodyBold.copyWith(color: AppColors.alert, fontSize: 18),
+              style: AppStyles.bodyBold.copyWith(color: AppColors.alert),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 24),
+          ),
+          SizedBox(height: 32),
+          
+          // 重试按钮（如果有上次扫描的条码）
+          if (_lastConfirmedBarcode != null) ...[
+            ElevatedButton.icon(
+              onPressed: () {
+                _processBarcodeData(_lastConfirmedBarcode!);
+              },
+              icon: Icon(Icons.refresh),
+              label: Text('Retry Last Scan'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+          ],
+          
+          // 重新扫描按钮
           _buildRescanButton(),
         ],
       ),
@@ -682,16 +910,15 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+        Icon(icon, color: AppColors.primary, size: 20),
+        SizedBox(width: 8),
+        Text(
+          title,
+          style: AppStyles.bodyBold.copyWith(
+            color: AppColors.primary,
+            fontSize: 16,
           ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
         ),
-        SizedBox(width: 12),
-        Text(title, style: AppStyles.h2),
       ],
     );
   }
@@ -741,30 +968,61 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("Product Information", Icons.info_outline),
-        SizedBox(height: 16),
+        // 构建过敏原显示逻辑
+        ..._buildAllergenDisplay(),
 
-        if (_currentAnalysis!.detectedAllergens.isNotEmpty) ...[
-          _buildInfoCard(
-            title: "Allergens",
-            content: _currentAnalysis!.detectedAllergens.join(', '),
-            icon: Icons.warning,
-            color: AppColors.alert,
-          ),
-          SizedBox(height: 12),
-        ],
-
-        _buildInfoCard(
-          title: "Ingredients",
-          content: _currentAnalysis!.ingredients.isNotEmpty
-              ? _currentAnalysis!.ingredients.join(', ')
-              : 'No ingredients listed.',
-          icon: Icons.list,
-          color: AppColors.primary,
+        IngredientsDisplay(
+          ingredients: _currentAnalysis!.ingredients,
+          // 去掉maxDisplayCount参数，使用默认值10（2列×5行）
         ),
-        SizedBox(height: 24),
+        SizedBox(height: 16), // 统一卡片间距
       ],
     );
+  }
+
+  /// 构建过敏原显示逻辑：有匹配显示警告，无匹配显示安全提示
+  List<Widget> _buildAllergenDisplay() {
+    if (_currentAnalysis == null) return [];
+
+    // 如果用户过敏原未加载完成，显示加载状态
+    if (!_userAllergensLoaded) {
+      return [
+        _buildInfoCard(
+          title: "Allergen Check",
+          content: "Checking allergen compatibility...",
+          icon: Icons.hourglass_empty,
+          color: Colors.grey,
+        ),
+        SizedBox(height: 12),
+      ];
+    }
+
+    // 执行过敏原匹配逻辑（不管用户是否设置过敏原）
+    final relevantAllergens = _getUserRelevantAllergens();
+
+    if (relevantAllergens.isNotEmpty) {
+      // Case 1: 有匹配的过敏原 - 显示警告，只显示匹配的过敏原
+      return [
+        _buildInfoCard(
+          title: "🚨 Allergen Warning",
+          content: "Contains ${relevantAllergens.join(', ')} - Personal allergy match detected!",
+          icon: Icons.warning,
+          color: AppColors.alert,
+        ),
+        SizedBox(height: 16), // 统一卡片间距
+      ];
+    } else {
+      // Case 2: 无匹配过敏原 - 显示安全提示
+      return [
+        _buildInfoCard(
+          title: "Allergen Information",
+          content: "No allergens detected - No ingredients found related to your allergy history",
+          icon: Icons.verified,
+          color: AppColors.success,
+        ),
+        SizedBox(height: 16), // 统一卡片间距
+      ];
+    }
   }
 
   Widget _buildInfoCard({
@@ -778,20 +1036,29 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: color, size: 20),
-              SizedBox(width: 8),
-              Text(title, style: AppStyles.bodyBold.copyWith(color: color)),
-            ],
+          _buildCardTitle(
+            icon: icon,
+            title: title,
+            iconColor: AppColors.primary,
           ),
           SizedBox(height: 8),
-          Text(content, style: AppStyles.bodyRegular),
+          Text(
+            content,
+            style: AppStyles.bodyRegular.copyWith(
+              color: AppColors.textDark,
+            ),
+          ),
         ],
       ),
     );
@@ -801,51 +1068,32 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("AI Nutrition Insights", Icons.psychology),
-        SizedBox(height: 16),
-
-        if (_currentAnalysis!.summary.isNotEmpty) ...[
-          _buildInsightCard(
-            title: "Summary",
-            content: _currentAnalysis!.summary,
-            icon: Icons.summarize,
-          ),
-          SizedBox(height: 12),
-        ],
-
-        if (_currentAnalysis!.detailedAnalysis.isNotEmpty) ...[
-          _buildInsightCard(
-            title: "Detailed Analysis",
-            content: _currentAnalysis!.detailedAnalysis,
-            icon: Icons.analytics,
-          ),
-          SizedBox(height: 12),
-        ],
-
-        if (_currentAnalysis!.actionSuggestions.isNotEmpty) ...[
-          _buildInsightCard(
-            title: "Recommendations",
-            content: _currentAnalysis!.actionSuggestions.map((s) => "• $s").join('\n'),
-            icon: Icons.lightbulb,
-          ),
-        ],
+        // 根据加载状态显示内容
+        _loadingState?.stage == LoadingStage.fetchingRecommendations
+            ? Center(child: CircularProgressIndicator(color: AppColors.primary))
+            : _buildLLMAnalysisCard(),
+        // View Details按钮已移到卡片内部，这里不再需要额外的间距
       ],
     );
   }
 
-  Widget _buildInsightCard({
-    required String title,
-    required String content,
-    required IconData icon,
-  }) {
+  Widget _buildLLMAnalysisCard() {
+    // 从ProductAnalysis对象获取LLM数据，而不是从_recommendationData
+    if (_currentAnalysis == null) return SizedBox.shrink();
+
+    final summary = _currentAnalysis!.summary;
+
+    print('🔍 Scanner LLM Card: Raw data - Summary: "${summary}"');
+
     return Container(
-      padding: EdgeInsets.all(16),
+      margin: EdgeInsets.only(bottom: 16), // 统一卡片外边距
+      padding: EdgeInsets.all(16), // 统一卡片内边距
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),
@@ -854,32 +1102,424 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 标题行
+          _buildCardTitle(
+        icon: Icons.psychology,
+            title: 'AI Nutrition Analysis',
+            iconColor: AppColors.primary,
+          ),
+          SizedBox(height: 16),
+
+          // 字段1: Summary
+          _buildScannerAnalysisField(
+            icon: Icons.summarize,
+            title: 'Summary',
+            content: summary,
+            color: Colors.orange,
+            fieldKey: 'summary',
+          ),
+          
+          // 添加推荐产品列表
+          if (_currentAnalysis!.recommendations.isNotEmpty) ...[
+            SizedBox(height: 16),
+            _buildRecommendationsList(),
+          ],
+          
+          SizedBox(height: 16),
+          
+          // View Details按钮 - 位于卡片右下角
           Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Container(
-                padding: EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 16),
-              ),
-              SizedBox(width: 8),
-              Text(title, style: AppStyles.bodyBold.copyWith(color: AppColors.primary)),
+              _buildViewDetailsButton(),
             ],
           ),
-          SizedBox(height: 12),
-          Text(content, style: AppStyles.bodyRegular),
         ],
       ),
     );
   }
 
+  /// 构建推荐产品列表组件
+  Widget _buildRecommendationsList() {
+    final recommendations = _currentAnalysis!.recommendations;
+    
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 推荐产品标题
+          Row(
+            children: [
+              Icon(
+                Icons.recommend, 
+                color: AppColors.primary, 
+                size: 18
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Alternative Products',
+                style: AppStyles.bodyBold.copyWith(
+                  color: AppColors.primary,
+                ),
+              ),
+              Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 12,
+                      color: AppColors.success,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      '${recommendations.length} FOUND',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          
+          // 推荐产品列表
+          ...recommendations.take(3).map((recommendation) => 
+            _buildRecommendationItem(recommendation)
+          ).toList(),
+          
+          // 如果有超过3个推荐，显示更多提示
+          if (recommendations.length > 3) ...[
+            SizedBox(height: 8),
+            _buildMoreAlternativesIndicator(recommendations.length, 3),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// 构建单个推荐产品项 - 优化展示体验
+  Widget _buildRecommendationItem(ProductAnalysis recommendation) {
+    // 确定显示内容：优先显示条码，其次显示推荐标识
+    bool hasBarcode = recommendation.barcode != null && recommendation.barcode!.isNotEmpty;
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12), // 增加间距，降低视觉密度
+      padding: EdgeInsets.all(12), // 增加内边距
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8), // 稍大的圆角
+        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 4,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 产品图标 - 更大更突出
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.shopping_bag_outlined,
+              size: 20,
+              color: AppColors.success,
+            ),
+          ),
+          SizedBox(width: 12),
+          
+          // 产品信息 - 简化层级
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recommendation.name,
+                  style: AppStyles.bodyBold.copyWith( // 使用新字体系统
+                    color: AppColors.textDark,
+                  ),
+                  maxLines: 2, // 允许两行显示完整名称
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  recommendation.summary.isNotEmpty ? 
+                    recommendation.summary : 
+                    "Better nutritional value for your goals", // 使用真实推荐理由或后备文本
+                  style: AppStyles.caption.copyWith( // 使用新字体系统
+                    color: AppColors.textLight,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          
+          // 推荐标识 - 显示条码或推荐图标
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: hasBarcode ? AppColors.primary : AppColors.success,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: hasBarcode 
+                ? Text(
+                    recommendation.barcode!, // 修复：显示完整条码
+                    style: AppStyles.statusLabel.copyWith(
+                      color: AppColors.white,
+                    ),
+                  )
+                : Icon(
+                    Icons.check,
+                    size: 14,
+                    color: AppColors.white,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 更新推荐产品数量显示样式
+  Widget _buildMoreAlternativesIndicator(int totalCount, int displayCount) {
+    if (totalCount <= displayCount) return SizedBox.shrink();
+    
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            '+${totalCount - displayCount} more alternatives available',
+            style: AppStyles.caption.copyWith( // 使用新字体系统
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 构建扫描器的单个分析字段显示 - 应用新字体系统
+  Widget _buildScannerAnalysisField({
+    required IconData icon,
+    required String title,
+    required String content,
+    required Color color,
+    required String fieldKey,
+    bool isList = false,
+    List<String>? listItems,
+  }) {
+    // 判断字段状态
+    bool hasContent = content.isNotEmpty;
+    bool isMeaningful = hasContent && content.length > 5 && content != 'null';
+
+    return Container(
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isMeaningful ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          width: 1,
+          ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 字段标题和状态
+          Row(
+            children: [
+              Icon(
+                icon, 
+                color: isMeaningful ? color : Colors.grey, 
+                size: 18
+              ),
+              SizedBox(width: 6),
+              Text(
+                title,
+                style: AppStyles.bodyBold.copyWith(
+                  color: isMeaningful ? color : Colors.grey[600]!,
+                ),
+              ),
+              Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _getScannerStatusColor(isMeaningful, hasContent).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getScannerStatusIcon(isMeaningful, hasContent),
+                      size: 12,
+                      color: _getScannerStatusColor(isMeaningful, hasContent),
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      _getScannerStatusText(isMeaningful, hasContent),
+                      style: AppStyles.statusLabel.copyWith( // 使用新字体系统
+                        color: _getScannerStatusColor(isMeaningful, hasContent),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          
+          // 字段内容
+          if (isMeaningful) ...[
+            if (isList && listItems != null && listItems.isNotEmpty) ...[
+              ...listItems.map((item) => 
+                Padding(
+                  padding: EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.arrow_right, color: color, size: 16),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          item,
+                          style: AppStyles.bodySmall, // 使用新字体系统
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).toList(),
+            ] else ...[
+              Text(
+                content,
+                style: AppStyles.bodySmall, // 使用新字体系统
+              ),
+            ],
+          ] else ...[
+            Text(
+              hasContent ? 'Raw content: "$content"' : 'No data received',
+              style: AppStyles.caption.copyWith( // 使用新字体系统
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            ],
+          
+          // 调试信息
+          SizedBox(height: 4),
+          Text(
+            'Field: $fieldKey | Length: ${content.length} chars',
+            style: AppStyles.caption.copyWith( // 使用新字体系统
+              color: Colors.grey.shade500,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 扫描器字段状态辅助方法
+  Color _getScannerStatusColor(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return Colors.green;
+    if (hasContent) return Colors.orange;
+    return Colors.grey;
+  }
+
+  IconData _getScannerStatusIcon(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return Icons.check_circle;
+    if (hasContent) return Icons.warning;
+    return Icons.help_outline;
+  }
+
+  String _getScannerStatusText(bool isMeaningful, bool hasContent) {
+    if (isMeaningful) return 'DATA';
+    if (hasContent) return 'PLACEHOLDER';
+    return 'EMPTY';
+  }
+
+  Widget _buildViewDetailsButton() {
+    final bool isDataReady = _loadingState?.isCompleted ?? false;
+    return ElevatedButton.icon(
+      onPressed: isDataReady ? () => _navigateToDetailPage() : null,
+      icon: Icon(
+        Icons.visibility,
+        size: 18,
+      ),
+      label: Text(
+        "View Details",
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.3,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isDataReady ? AppColors.primary : Colors.grey[300],
+        foregroundColor: isDataReady ? AppColors.white : Colors.grey[600],
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: isDataReady ? 2 : 0,
+        shadowColor: isDataReady ? AppColors.primary.withOpacity(0.3) : null,
+      ),
+    );
+  }
+
+  void _navigateToDetailPage() {
+    if (_currentAnalysis != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RecommendationDetailScreen(
+            productAnalysis: _currentAnalysis!,
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildRescanButton() {
     return ElevatedButton.icon(
       onPressed: () async {
-        await _controller?.stop();
-        setState(() {
+        // 重置状态
+        _safeSetState(() {
           _showScanner = true;
           _receiptItems.clear();
           _currentAnalysis = null;
@@ -890,7 +1530,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           _detectionCount.clear();
           _lastConfirmedBarcode = null;
         });
-        await _controller?.start();
+        
+        // 安全重启摄像头
+        await _safeRestartCamera();
       },
       icon: Icon(Icons.qr_code_scanner, size: 20),
       label: Text(
@@ -911,6 +1553,263 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
         elevation: 2,
         shadowColor: AppColors.primary.withOpacity(0.3),
       ),
+    );
+  }
+
+  /// 构建成分信息卡片
+  Widget _buildIngredientsCard() {
+    final ingredients = _currentAnalysis?.ingredients ?? [];
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题行
+          Row(
+            children: [
+              Icon(Icons.list, color: AppColors.primary, size: 20),
+              SizedBox(width: 8),
+              Text(
+                "Ingredients",
+                style: AppStyles.bodyBold.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          // 成分内容
+          _buildIngredientsContent(ingredients),
+        ],
+      ),
+    );
+  }
+
+  /// 构建成分内容显示
+  Widget _buildIngredientsContent(List<String> ingredients) {
+    if (ingredients.isEmpty) {
+      return Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.grey[600], size: 16),
+            SizedBox(width: 8),
+            Text(
+              'No ingredients information available',
+              style: AppStyles.bodyRegular.copyWith(
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 处理成分数据
+    List<String> processedIngredients = _processIngredients(ingredients);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 显示前5个主要成分
+        ...processedIngredients.take(5).map((ingredient) => 
+          Container(
+            margin: EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: EdgeInsets.only(top: 8, right: 8),
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    ingredient,
+                    style: AppStyles.bodyRegular.copyWith(
+                      color: AppColors.textDark,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // 如果有更多成分，显示展开按钮
+        if (processedIngredients.length > 5) ...[
+          SizedBox(height: 8),
+          _buildExpandIngredientsButton(processedIngredients),
+        ],
+      ],
+    );
+  }
+
+  /// 处理成分数据
+  List<String> _processIngredients(List<String> rawIngredients) {
+    List<String> processed = [];
+    
+    for (String ingredient in rawIngredients) {
+      if (ingredient.trim().isEmpty) continue;
+      
+      // 如果是逗号分隔的长字符串，需要分割
+      if (ingredient.contains(',') && ingredient.length > 50) {
+        List<String> parts = ingredient.split(',');
+        for (String part in parts) {
+          String cleaned = _cleanIngredient(part.trim());
+          if (cleaned.isNotEmpty) {
+            processed.add(cleaned);
+          }
+        }
+      } else {
+        String cleaned = _cleanIngredient(ingredient.trim());
+        if (cleaned.isNotEmpty) {
+          processed.add(cleaned);
+        }
+      }
+    }
+    
+    return processed;
+  }
+
+  /// 清理单个成分名称
+  String _cleanIngredient(String ingredient) {
+    String cleaned = ingredient.trim();
+    
+    // 移除可能的前缀
+    if (cleaned.startsWith('MODIFIED CODE: ')) {
+      cleaned = cleaned.substring(15).trim();
+    }
+    
+    // 移除多余的空格
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ');
+    
+    // 首字母大写（如果是小写开头）
+    if (cleaned.isNotEmpty && cleaned[0].toLowerCase() == cleaned[0]) {
+      cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
+    }
+    
+    return cleaned;
+  }
+
+  /// 构建展开成分按钮
+  Widget _buildExpandIngredientsButton(List<String> allIngredients) {
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      child: InkWell(
+        onTap: () => _showAllIngredients(allIngredients),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.expand_more,
+                color: AppColors.primary,
+                size: 16,
+              ),
+              SizedBox(width: 4),
+              Text(
+                'Show all ${allIngredients.length} ingredients',
+                style: AppStyles.bodySmall.copyWith( // 使用新字体系统
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 显示所有成分的弹窗
+  void _showAllIngredients(List<String> ingredients) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.list, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('All Ingredients'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            constraints: BoxConstraints(maxHeight: 400),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: ingredients.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        margin: EdgeInsets.only(top: 8, right: 8),
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          ingredients[index],
+                          style: AppStyles.bodyRegular.copyWith(
+                            color: AppColors.textDark,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

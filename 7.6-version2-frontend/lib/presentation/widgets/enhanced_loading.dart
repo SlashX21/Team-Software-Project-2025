@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
 import '../theme/app_styles.dart';
 
 class EnhancedLoading extends StatefulWidget {
@@ -27,21 +26,16 @@ class EnhancedLoading extends StatefulWidget {
   _EnhancedLoadingState createState() => _EnhancedLoadingState();
 }
 
-class _EnhancedLoadingState extends State<EnhancedLoading>
-    with TickerProviderStateMixin {
-  late AnimationController _rotationController;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-  
+class _EnhancedLoadingState extends State<EnhancedLoading> {
   Timer? _progressTimer;
   double _simulatedProgress = 0.0;
   String _currentStage = '';
   
   final List<String> _scanningStages = [
-    'Identifying barcode...',
+    'Detecting barcode...',
     'Querying product database...',
-    'Analyzing product information...',
-    'Getting nutrition advice...',
+    'Analyzing your nutrition needs...',
+    'Generating personalized suggestions...',
   ];
   
   final List<String> _profileStages = [
@@ -53,30 +47,7 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
     _startProgressSimulation();
-  }
-
-  void _setupAnimations() {
-    _rotationController = AnimationController(
-      duration: Duration(seconds: 2),
-      vsync: this,
-    )..repeat();
-
-    _pulseController = AnimationController(
-      duration: Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-
-    _pulseController.repeat(reverse: true);
   }
 
   void _startProgressSimulation() {
@@ -87,13 +58,12 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
         : _profileStages;
     
     int currentStageIndex = 0;
-    final stageDuration = (widget.estimatedTime ?? Duration(seconds: 6)).inMilliseconds / stages.length;
 
-    _progressTimer = Timer.periodic(Duration(milliseconds: 100), (timer) {
+    _progressTimer = Timer.periodic(Duration(milliseconds: 150), (timer) {
       if (!mounted) return;
 
       setState(() {
-        _simulatedProgress += 0.02;
+        _simulatedProgress += 0.015;
         
         // 更新当前阶段
         final expectedStage = (_simulatedProgress * stages.length).floor();
@@ -102,8 +72,8 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
           _currentStage = stages[currentStageIndex];
         }
         
-        if (_simulatedProgress >= 1.0) {
-          _simulatedProgress = 0.95; // 不要达到100%，等待真实完成
+        if (_simulatedProgress >= 0.95) {
+          _simulatedProgress = 0.95;
           timer.cancel();
         }
       });
@@ -112,8 +82,6 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
 
   @override
   void dispose() {
-    _rotationController.dispose();
-    _pulseController.dispose();
     _progressTimer?.cancel();
     super.dispose();
   }
@@ -121,89 +89,70 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(24),
+      padding: EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 动画图标
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pulseAnimation.value,
-                child: AnimatedBuilder(
-                  animation: _rotationController,
-                  builder: (context, child) {
-                    return Transform.rotate(
-                      angle: _rotationController.value * 2 * 3.14159,
-                      child: Container(
-                        width: 60,
-                        height: 60,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _getGradientColors(),
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
+          // 静态的Material 3风格加载指示器 - 无缩放动画
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: CircularProgressIndicator(
+              strokeWidth: 4,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                         ),
-                        child: Icon(
-                          _getIcon(),
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
           ),
           
-          SizedBox(height: 20),
+          SizedBox(height: 24),
           
           // 主要消息
           Text(
             widget.message,
-            style: AppStyles.h2.copyWith(
-              color: AppColors.textDark,
+            style: AppStyles.h3.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
           
-          SizedBox(height: 8),
+          SizedBox(height: 12),
           
           // 当前阶段信息
           if (_currentStage.isNotEmpty)
-            Text(
+            AnimatedSwitcher(
+              duration: Duration(milliseconds: 300),
+              child: Text(
               _currentStage,
+                key: ValueKey(_currentStage),
               style: AppStyles.bodyRegular.copyWith(
-                color: AppColors.primary,
-                fontSize: 14,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
+              ),
             ),
           
           // 次要消息
           if (widget.secondaryMessage != null) ...[
-            SizedBox(height: 4),
+            SizedBox(height: 8),
             Text(
               widget.secondaryMessage!,
               style: AppStyles.bodyRegular.copyWith(
-                color: AppColors.textLight,
-                fontSize: 13,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -219,10 +168,13 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
           
           // 取消按钮
           if (widget.onCancel != null)
-            TextButton(
+            FilledButton.tonal(
               onPressed: widget.onCancel,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textLight,
+              style: FilledButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
               child: Text('Cancel'),
             ),
@@ -236,165 +188,84 @@ class _EnhancedLoadingState extends State<EnhancedLoading>
     
     return Column(
       children: [
-        // 进度条
-        Container(
-          width: double.infinity,
-          height: 6,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(3),
+        LinearProgressIndicator(
+          value: progress,
+          backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            Theme.of(context).colorScheme.primary,
           ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: progress,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
-                ),
+          minHeight: 6,
                 borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
         ),
-        
         SizedBox(height: 8),
-        
-        // 进度百分比和预估时间
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
             Text(
-              '${(progress * 100).toInt()}%',
-              style: AppStyles.bodyRegular.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+          '${(progress * 100).round()}%',
+          style: AppStyles.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
               ),
-            ),
-            if (widget.estimatedTime != null)
-              Text(
-                'Estimated remaining ${_formatRemainingTime(progress)}',
-                style: AppStyles.bodyRegular.copyWith(
-                  color: AppColors.textLight,
-                  fontSize: 12,
-                ),
-              ),
-          ],
         ),
       ],
     );
   }
-
-  String _formatRemainingTime(double progress) {
-    if (widget.estimatedTime == null || progress >= 1.0) return 'Almost done';
-    
-    final remaining = widget.estimatedTime!.inSeconds * (1 - progress);
-    if (remaining < 1) return 'Almost done';
-    if (remaining < 60) return '${remaining.toInt()} seconds';
-    
-    final minutes = (remaining / 60).floor();
-    final seconds = (remaining % 60).toInt();
-    return '${minutes} minutes ${seconds} seconds';
-  }
-
-  IconData _getIcon() {
-    switch (widget.type) {
-      case LoadingType.scanning:
-        return Icons.qr_code_scanner;
-      case LoadingType.profile:
-        return Icons.person;
-      case LoadingType.api:
-        return Icons.cloud_sync;
-      case LoadingType.processing:
-        return Icons.psychology;
-      default:
-        return Icons.hourglass_empty;
-    }
-  }
-
-  List<Color> _getGradientColors() {
-    switch (widget.type) {
-      case LoadingType.scanning:
-        return [AppColors.primary, Colors.blue.shade400];
-      case LoadingType.profile:
-        return [Colors.green.shade400, Colors.teal.shade400];
-      case LoadingType.api:
-        return [Colors.orange.shade400, Colors.deepOrange.shade400];
-      case LoadingType.processing:
-        return [Colors.purple.shade400, Colors.indigo.shade400];
-      default:
-        return [AppColors.primary, AppColors.primary.withOpacity(0.7)];
-    }
-  }
 }
 
+// 加载类型枚举
 enum LoadingType {
   scanning,
   profile,
-  api,
+  recommendations,
   processing,
-  general,
 }
 
-/// 通用加载对话框
-class LoadingDialog extends StatelessWidget {
+// 简化版加载对话框
+class SimpleLoadingDialog extends StatelessWidget {
   final String message;
-  final String? secondaryMessage;
-  final LoadingType type;
-  final bool showProgress;
-  final double? progress;
-  final Duration? estimatedTime;
-  final bool barrierDismissible;
+  final String? subMessage;
 
-  const LoadingDialog({
+  const SimpleLoadingDialog({
     Key? key,
     required this.message,
-    this.secondaryMessage,
-    this.type = LoadingType.general,
-    this.showProgress = false,
-    this.progress,
-    this.estimatedTime,
-    this.barrierDismissible = false,
+    this.subMessage,
   }) : super(key: key);
-
-  static Future<T?> show<T>(
-    BuildContext context, {
-    required String message,
-    String? secondaryMessage,
-    LoadingType type = LoadingType.general,
-    bool showProgress = false,
-    double? progress,
-    Duration? estimatedTime,
-    bool barrierDismissible = false,
-  }) {
-    return showDialog<T>(
-      context: context,
-      barrierDismissible: barrierDismissible,
-      builder: (context) => LoadingDialog(
-        message: message,
-        secondaryMessage: secondaryMessage,
-        type: type,
-        showProgress: showProgress,
-        progress: progress,
-        estimatedTime: estimatedTime,
-        barrierDismissible: barrierDismissible,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: EnhancedLoading(
-        message: message,
-        secondaryMessage: secondaryMessage,
-        type: type,
-        showProgress: showProgress,
-        progress: progress,
-        estimatedTime: estimatedTime,
-        onCancel: barrierDismissible ? () => Navigator.of(context).pop() : null,
+      child: Container(
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              message,
+              style: AppStyles.bodyBold,
+              textAlign: TextAlign.center,
+            ),
+            if (subMessage != null) ...[
+              SizedBox(height: 8),
+              Text(
+                subMessage!,
+                style: AppStyles.bodyRegular.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

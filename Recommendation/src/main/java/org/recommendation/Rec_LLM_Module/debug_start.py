@@ -45,16 +45,17 @@ try:
     import uvicorn
     
     print("🔗 API服务地址:")
-    print("  - 健康检查: http://localhost:8000/health")
-    print("  - API文档: http://localhost:8000/docs")
-    print("  - 条码推荐: POST http://localhost:8000/recommendations/barcode")
-    print("  - 小票分析: POST http://localhost:8000/recommendations/receipt")
+    print("  - 健康检查: http://localhost:8001/health")
+    print("  - API文档: http://localhost:8001/docs")
+    print("  - 条码推荐: POST http://localhost:8001/recommendations/barcode")
+    print("  - 小票分析: POST http://localhost:8001/recommendations/receipt")
     print("=" * 60)
     print("💡 按 Ctrl+C 停止服务")
     print("=" * 60)
     
     # 启动服务
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    api_port = int(os.getenv('API_PORT', 8001))
+    uvicorn.run(app, host="0.0.0.0", port=api_port, log_level="info")
     
 except Exception as e:
     print(f"❌ 启动失败: {e}")

@@ -72,11 +72,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.home_rounded, 'Home'),
-                _buildNavItem(1, Icons.qr_code_scanner_rounded, 'Scan'),
-                _buildNavItem(2, Icons.monitor_heart_rounded, 'Sugar'),
-                _buildNavItem(3, Icons.history_rounded, 'History'),
-                _buildNavItem(4, Icons.person_rounded, 'Profile'),
+                Expanded(child: _buildNavItem(0, Icons.home_rounded, 'Home')),
+                Expanded(child: _buildNavItem(1, Icons.qr_code_scanner_rounded, 'Scan')),
+                Expanded(child: _buildNavItem(2, Icons.monitor_heart_rounded, 'Sugar')),
+                Expanded(child: _buildNavItem(3, Icons.history_rounded, 'History')),
+                Expanded(child: _buildNavItem(4, Icons.person_rounded, 'Profile')),
               ],
             ),
           ),

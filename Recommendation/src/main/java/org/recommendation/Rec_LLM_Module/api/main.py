@@ -28,9 +28,9 @@ app = FastAPI(
 # 配置CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境中应该限制具体域名
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # 开发环境允许所有来源
+    allow_credentials=False,  # 设为False以支持通配符origins
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

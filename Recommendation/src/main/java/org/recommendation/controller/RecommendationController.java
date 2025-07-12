@@ -37,7 +37,7 @@ public class RecommendationController {
         List<Map<String, Object>> purchasedItems = request.getPurchasedItems().stream()
                 .map(item -> {
                     Map<String, Object> itemMap = new HashMap<>();
-                    itemMap.put("barcode", item.getBarcode());
+                    itemMap.put("productName", item.getProductName());
                     itemMap.put("quantity", item.getQuantity());
                     return itemMap;
                 })
@@ -175,21 +175,21 @@ public class RecommendationController {
      * 购买商品 DTO
      */
     public static class PurchasedItem {
-        private String barcode;
+        private String productName;
         private Integer quantity;
-        
-        public String getBarcode() {
-            return barcode;
+
+        public String getProductName() {
+            return productName;
         }
-        
-        public void setBarcode(String barcode) {
-            this.barcode = barcode;
+
+        public void setProductName(String productName) {
+            this.productName = productName;
         }
-        
+
         public Integer getQuantity() {
             return quantity;
         }
-        
+
         public void setQuantity(Integer quantity) {
             this.quantity = quantity;
         }
