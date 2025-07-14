@@ -31,9 +31,6 @@
             <column name="consumed_at" type="${type.timestamp}">
                 <constraints nullable="false"/>
             </column>
-            <column name="barcode" type="${type.string}">
-                <constraints nullable="true"/>
-            </column>
             <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
                 <constraints nullable="false"/>
             </column>
@@ -58,24 +55,6 @@
                 onDelete="CASCADE"/>
     </changeSet>
 
-    <!-- add foreign key constraint for barcode (optional, references product table) -->
-    <changeSet id="sugar-intake-history-add-foreign-key-product-1" author="YanhaoSun">
-        <preConditions onFail="MARK_RAN">
-            <tableExists tableName="sugar_intake_history"/>
-            <tableExists tableName="product"/>
-            <not>
-                <foreignKeyConstraintExists foreignKeyName="fk_sugar_intake_history_barcode"/>
-            </not>
-        </preConditions>
-        <addForeignKeyConstraint
-                baseTableName="sugar_intake_history"
-                baseColumnNames="barcode"
-                constraintName="fk_sugar_intake_history_barcode"
-                referencedTableName="product"
-                referencedColumnNames="barcode"
-                onDelete="SET NULL"/>
-    </changeSet>
-
     <!-- add index for user_id -->
     <changeSet id="sugar-intake-history-add-index-user-id-1" author="YanhaoSun">
         <preConditions onFail="MARK_RAN">
@@ -89,6 +68,32 @@
         </createIndex>
     </changeSet>
 
+    <!-- add index for consumed_at -->
+    <changeSet id="sugar-intake-history-add-index-consumed-at-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <not>
+                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_consumed_at"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_consumed_at">
+            <column name="consumed_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add composite index for user_id and consumed_at -->
+    <changeSet id="sugar-intake-history-add-index-user-consumed-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+            <not>
+                <indexExists tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_consumed"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="sugar_intake_history" indexName="idx_sugar_intake_history_user_consumed">
+            <column name="user_id"/>
+            <column name="consumed_at"/>
+        </createIndex>
+    </changeSet>
 
     <!-- add check constraint for sugar_amount_mg -->
     <changeSet id="sugar-intake-history-add-check-constraint-sugar-amount-1" author="YanhaoSun">
@@ -102,6 +107,21 @@
         </sql>
         <rollback>
             ALTER TABLE sugar_intake_history DROP CONSTRAINT chk_sugar_amount_mg
+        </rollback>
+    </changeSet>
+
+    <!-- add check constraint for quantity -->
+    <changeSet id="sugar-intake-history-add-check-constraint-quantity-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="sugar_intake_history"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE sugar_intake_history 
+            ADD CONSTRAINT chk_quantity 
+            CHECK (quantity &gt; 0)
+        </sql>
+        <rollback>
+            ALTER TABLE sugar_intake_history DROP CONSTRAINT chk_quantity
         </rollback>
     </changeSet>
 

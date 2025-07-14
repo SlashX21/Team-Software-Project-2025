@@ -7,9 +7,13 @@ import org.user.pojo.SugarIntakeHistory;
 import org.user.pojo.DTO.SugarIntakeHistoryDto;
 import org.user.pojo.DTO.ResponseMessage;
 import org.user.pojo.DTO.MonthlyStatsDto;
+import org.user.pojo.DTO.MonthlyCalendarDto;
+import org.user.pojo.DTO.DailySugarSummaryDto;
+import org.user.pojo.DailySugarSummary;
 import org.user.repository.SugarIntakeHistoryRepository;
 import org.user.repository.SugarGoalsRepository;
 import org.user.pojo.SugarGoals;
+import org.user.enums.SugarSummaryStatus;
 
 
 import java.time.LocalDateTime;
@@ -34,13 +38,21 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
     @Autowired
     private SugarGoalsRepository sugarGoalsRepository;
     
+    @Autowired
+    private IDailySugarSummaryService dailySugarSummaryService;
+    
     @Override
     public ResponseMessage<SugarIntakeHistoryDto> addSugarIntakeRecord(SugarIntakeHistoryDto sugarIntakeHistoryDto) {
         try {
             SugarIntakeHistory sugarIntakeHistory = convertDtoToEntity(sugarIntakeHistoryDto);
             SugarIntakeHistory savedRecord = sugarIntakeHistoryRepository.save(sugarIntakeHistory);
+            
+            // update daily sugar summary (replace the core logic of the SQL trigger)
+            LocalDate intakeDate = savedRecord.getConsumedAt().toLocalDate();
+            dailySugarSummaryService.updateDailySugarSummary(savedRecord.getUserId(), intakeDate);
+            
             SugarIntakeHistoryDto resultDto = convertEntityToDto(savedRecord);
-            return ResponseMessage.success(resultDto);
+            return ResponseMessage.success(201, "Sugar record added successfully", resultDto);
         } catch (Exception e) {
             return new ResponseMessage<>(500, "Failed to add sugar intake record: " + e.getMessage(), null);
         }
@@ -55,8 +67,23 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
             }
             
             SugarIntakeHistory sugarIntakeHistory = existingRecord.get();
+            LocalDate oldDate = sugarIntakeHistory.getConsumedAt().toLocalDate();
+            
             updateEntityFromDto(sugarIntakeHistory, sugarIntakeHistoryDto);
             SugarIntakeHistory updatedRecord = sugarIntakeHistoryRepository.save(sugarIntakeHistory);
+            
+            // update daily sugar summary (replace the core logic of the SQL trigger)
+            LocalDate newDate = updatedRecord.getConsumedAt().toLocalDate();
+            
+            // if the date changes, update the summaries for both dates
+            if (!oldDate.equals(newDate)) {
+                dailySugarSummaryService.updateDailySugarSummary(updatedRecord.getUserId(), oldDate);
+                dailySugarSummaryService.updateDailySugarSummary(updatedRecord.getUserId(), newDate);
+            } else {
+                // only update the summary for the current date
+                dailySugarSummaryService.updateDailySugarSummary(updatedRecord.getUserId(), newDate);
+            }
+            
             SugarIntakeHistoryDto resultDto = convertEntityToDto(updatedRecord);
             return ResponseMessage.success(resultDto);
         } catch (Exception e) {
@@ -67,11 +94,20 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
     @Override
     public ResponseMessage<String> deleteSugarIntakeRecord(Integer intakeId) {
         try {
-            if (!sugarIntakeHistoryRepository.existsById(intakeId)) {
+            Optional<SugarIntakeHistory> recordOpt = sugarIntakeHistoryRepository.findById(intakeId);
+            if (!recordOpt.isPresent()) {
                 return new ResponseMessage<>(404, "Sugar intake record not found with ID: " + intakeId, null);
             }
             
+            SugarIntakeHistory record = recordOpt.get();
+            Integer userId = record.getUserId();
+            LocalDate intakeDate = record.getConsumedAt().toLocalDate();
+            
             sugarIntakeHistoryRepository.deleteById(intakeId);
+            
+            // update daily sugar summary (replace the core logic of the SQL trigger)
+            dailySugarSummaryService.updateDailySugarSummary(userId, intakeDate);
+            
             return ResponseMessage.success("Sugar intake record deleted successfully");
         } catch (Exception e) {
             return new ResponseMessage<>(500, "Failed to delete sugar intake record: " + e.getMessage(), null);
@@ -172,21 +208,7 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
             return new ResponseMessage<>(500, "Failed to search sugar intake records: " + e.getMessage(), null);
         }
     }
-    
-    @Override
-    public ResponseMessage<List<SugarIntakeHistoryDto>> getSugarIntakeRecordsByBarcode(String barcode) {
-        try {
-            List<SugarIntakeHistory> records = sugarIntakeHistoryRepository
-                    .findByBarcodeOrderByConsumedAtDesc(barcode);
-            List<SugarIntakeHistoryDto> resultDtos = records.stream()
-                    .map(this::convertEntityToDto)
-                    .collect(Collectors.toList());
-            return ResponseMessage.success(resultDtos);
-        } catch (Exception e) {
-            return new ResponseMessage<>(500, "Failed to retrieve sugar intake records: " + e.getMessage(), null);
-        }
-    }
-    
+
     @Override
     public ResponseMessage<String> deleteAllSugarIntakeRecordsByUserId(Integer userId) {
         try {
@@ -294,7 +316,7 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
         }
     }
     
-    // 辅助方法：DTO转Entity
+    // helper method: convert DTO to Entity
     private SugarIntakeHistory convertDtoToEntity(SugarIntakeHistoryDto dto) {
         SugarIntakeHistory entity = new SugarIntakeHistory();
         entity.setIntakeId(dto.getIntakeId());
@@ -303,12 +325,12 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
         entity.setSugarAmountMg(dto.getSugarAmountMg());
         entity.setQuantity(1.0f); // by default, the quantity is 1, because the frontend has already calculated the total sugar intake
         entity.setConsumedAt(dto.getIntakeTime()); // DTO的intakeTime映射到Entity的consumedAt
-        entity.setBarcode(dto.getBarcode());
+        // entity.setBarcode(dto.getBarcode());
         entity.setCreatedAt(dto.getCreatedAt());
         return entity;
     }
     
-    // 辅助方法：Entity转DTO
+    // helper method: convert Entity to DTO
     private SugarIntakeHistoryDto convertEntityToDto(SugarIntakeHistory entity) {
         SugarIntakeHistoryDto dto = new SugarIntakeHistoryDto();
         dto.setIntakeId(entity.getIntakeId());
@@ -316,12 +338,12 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
         dto.setFoodName(entity.getFoodName());
         dto.setSugarAmountMg(entity.getSugarAmountMg());
         dto.setIntakeTime(entity.getConsumedAt()); // Entity的consumedAt映射到DTO的intakeTime
-        dto.setBarcode(entity.getBarcode());
+        // dto.setBarcode(entity.getBarcode());
         dto.setCreatedAt(entity.getCreatedAt());
         return dto;
     }
     
-    // 辅助方法：从DTO更新Entity
+    // helper method: update Entity from DTO
     private void updateEntityFromDto(SugarIntakeHistory entity, SugarIntakeHistoryDto dto) {
         if (dto.getFoodName() != null) {
             entity.setFoodName(dto.getFoodName());
@@ -329,55 +351,94 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
         if (dto.getSugarAmountMg() != null) {
             entity.setSugarAmountMg(dto.getSugarAmountMg());
         }
-        if (dto.getBarcode() != null) {
-            entity.setBarcode(dto.getBarcode());
-        }
+        // if (dto.getBarcode() != null) {
+        //     entity.setBarcode(dto.getBarcode());
+        // }
     }
     
     @Override
     public ResponseMessage<Map<String, Object>> getDailySugarTrackingData(Integer userId, String date) {
         try {
-            // obtain the daily records of the user
-            List<SugarIntakeHistory> dailyRecords;
             String targetDate;
+            LocalDate queryDate;
 
             if (date != null && !date.isEmpty()) {
                 targetDate = date;
-                Date sqlDate = Date.valueOf(LocalDate.parse(date));
-
-                dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndDate(userId, sqlDate);
+                queryDate = LocalDate.parse(date);
             } else {
                 targetDate = LocalDate.now().toString();
-                dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndCurrentDate(userId);
+                queryDate = LocalDate.now();
             }
-            for (SugarIntakeHistory record : dailyRecords) {
-                System.out.println("record: " + record.getFoodName() + " " + record.getSugarAmountMg());
-            }
-            // calculate the current intake
-            Float currentIntakeMg = dailyRecords.stream()
-                    .map(SugarIntakeHistory::getSugarAmountMg)
-                    .reduce(0.0f, Float::sum);
+
+            // get the summary data from the daily_sugar_summary table first
+            Float currentIntakeMg = 0.0f;
+            Float dailyGoalMg = 30000.0f; // default 30g
+            Float progressPercentage = 0.0f;
+            String status = "on_track";
+
+            ResponseMessage<DailySugarSummaryDto> summaryResponse = dailySugarSummaryService.getDailySummaryByDate(userId, queryDate);
             
-            // obtain the user's sugar goal
-            SugarGoals userGoal = sugarGoalsRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
-            Float dailyGoalMg = (userGoal != null && userGoal.getDailyGoalMg() != null) ? 
-                    userGoal.getDailyGoalMg().floatValue() : 30000.0f; // default 30g
-            
-            // calculate the progress percentage
-            Float progressPercentage = dailyGoalMg > 0 ? (currentIntakeMg / dailyGoalMg) * 100.0f : 0.0f;
-            progressPercentage = Math.round(progressPercentage * 10.0f) / 10.0f; // keep one decimal place
-            
-            // calculate the remaining amount
-            Float remainingMg = Math.max(0, dailyGoalMg - currentIntakeMg);
-            
-            // determine the status
-            String status;
-            if (progressPercentage <= 75.0f) {
-                status = "on_track";
-            } else if (progressPercentage <= 100.0f) {
-                status = "warning";
+            if (summaryResponse.getCode() == 200 && summaryResponse.getData() != null) {
+                // get the data from the summary table
+                DailySugarSummaryDto summary = summaryResponse.getData();
+                currentIntakeMg = summary.getTotalIntakeMg().floatValue();
+                dailyGoalMg = summary.getDailyGoalMg().floatValue();
+                progressPercentage = summary.getProgressPercentage().floatValue();
+                
+                // map the status
+                switch (summary.getStatus()) {
+                    case GOOD:
+                        status = "on_track";
+                        break;
+                    case WARNING:
+                        status = "warning";
+                        break;
+                    case OVER_LIMIT:
+                        status = "over_limit";
+                        break;
+                    default:
+                        status = "on_track";
+                }
             } else {
-                status = "over_limit";
+                // if the summary table has no data, calculate from the detailed records
+                List<SugarIntakeHistory> dailyRecords;
+                if (date != null && !date.isEmpty()) {
+                    Date sqlDate = Date.valueOf(queryDate);
+                    dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndDate(userId, sqlDate);
+                } else {
+                    dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndCurrentDate(userId);
+                }
+                
+                currentIntakeMg = dailyRecords.stream()
+                        .map(SugarIntakeHistory::getSugarAmountMg)
+                        .reduce(0.0f, Float::sum);
+                
+                // obtain the user's sugar goal
+                SugarGoals userGoal = sugarGoalsRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
+                dailyGoalMg = (userGoal != null && userGoal.getDailyGoalMg() != null) ? 
+                        userGoal.getDailyGoalMg().floatValue() : 30000.0f;
+                
+                // calculate the progress percentage
+                progressPercentage = dailyGoalMg > 0 ? (currentIntakeMg / dailyGoalMg) * 100.0f : 0.0f;
+                progressPercentage = Math.round(progressPercentage * 10.0f) / 10.0f;
+                
+                // determine the status
+                if (progressPercentage <= 75.0f) {
+                    status = "on_track";
+                } else if (progressPercentage <= 100.0f) {
+                    status = "warning";
+                } else {
+                    status = "over_limit";
+                }
+            }
+
+            // get the detailed records from the sugar_intake_history table as topContributors
+            List<SugarIntakeHistory> dailyRecords;
+            if (date != null && !date.isEmpty()) {
+                Date sqlDate = Date.valueOf(queryDate);
+                dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndDate(userId, sqlDate);
+            } else {
+                dailyRecords = sugarIntakeHistoryRepository.findByUserIdAndCurrentDate(userId);
             }
             
             // build the top contributors list
@@ -389,16 +450,12 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
                     .limit(5)
                     .forEach(record -> {
                         Map<String, Object> contributor = new HashMap<>();
+                        contributor.put("id", record.getIntakeId()); // int类型，直接返回Integer
                         contributor.put("foodName", record.getFoodName());
-                        contributor.put("sugarAmount", Math.round(record.getSugarAmountMg()));
-                        
-                        // calculate the percentage of this food in the total intake
-                        Float percentage = currentIntakeMg > 0 ? (record.getSugarAmountMg() / currentIntakeMg) * 100.0f : 0.0f;
-                        contributor.put("percentage", Math.round(percentage));
-                        
-                        // format the time
-                        // String timeStr = record.getIntakeTime().format(DateTimeFormatter.ofPattern("HH:mm"));
-                        // contributor.put("time", timeStr);
+                        contributor.put("sugarAmountMg", Math.round(record.getSugarAmountMg()));
+                        contributor.put("quantity", record.getQuantity() != null ? record.getQuantity() : 1.0f);
+                        contributor.put("totalSugarAmount", Math.round(record.getSugarAmountMg() * (record.getQuantity() != null ? record.getQuantity() : 1.0f))); // 新增计算字段
+                        contributor.put("consumedAt", record.getConsumedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
                         
                         topContributors.add(contributor);
                     });
@@ -684,6 +741,157 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
             
         } catch (Exception e) {
             return new ResponseMessage<>(500, "Failed to get sugar intake history statistics: " + e.getMessage(), null);
+        }
+    }
+    
+    @Override
+    public ResponseMessage<MonthlyCalendarDto> getMonthlyCalendarData(Integer userId, Integer year, Integer month) {
+        try {
+            // parameter validation
+            if (month < 1 || month > 12) {
+                return new ResponseMessage<>(400, "Month must be between 1 and 12", null);
+            }
+            if (year < 2020 || year > 2100) {
+                return new ResponseMessage<>(400, "Year must be between 2020 and 2100", null);
+            }
+            
+            // get the user's sugar goal
+            SugarGoals userGoal = sugarGoalsRepository.findTopByUserIdOrderByCreatedAtDesc(userId);
+            Double dailyGoalMg = (userGoal != null && userGoal.getDailyGoalMg() != null) ? 
+                    userGoal.getDailyGoalMg() : 50000.0; // default 50g
+            
+            // use DailySugarSummaryService to query the monthly data
+            List<DailySugarSummaryDto> monthlySummaries = dailySugarSummaryService
+                    .getDailySummariesByDateRange(
+                            userId,
+                            LocalDate.of(year, month, 1),
+                            LocalDate.of(year, month, 1).withDayOfMonth(
+                                    LocalDate.of(year, month, 1).lengthOfMonth()
+                            )
+                    ).getData();
+            
+            // if the summary table has no data, recalculate from the history records
+            if (monthlySummaries == null || monthlySummaries.isEmpty()) {
+                // recalculate the monthly summary data
+                LocalDate startDate = LocalDate.of(year, month, 1);
+                LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+                dailySugarSummaryService.recalculateUserSugarSummaries(userId, startDate, endDate);
+                
+                // recalculate the monthly summary data
+                monthlySummaries = dailySugarSummaryService
+                        .getDailySummariesByDateRange(userId, startDate, endDate).getData();
+            }
+            
+            // create the calendar data
+            List<MonthlyCalendarDto.DailySummaryDto> dailySummaries = new ArrayList<>();
+            LocalDate startDate = LocalDate.of(year, month, 1);
+            LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
+            LocalDate currentDate = startDate;
+            System.out.println("startDate: " + startDate);
+            System.out.println("endDate: " + endDate);
+            System.out.println("currentDate: " + currentDate);
+            System.out.println("monthlySummaries: " + monthlySummaries);
+            // convert the summary data to Map for quick lookup
+            Map<LocalDate, DailySugarSummaryDto> summaryMap = new HashMap<>();
+            if (monthlySummaries != null) {
+                for (DailySugarSummaryDto summary : monthlySummaries) {
+                    summaryMap.put(summary.getDate(), summary);
+                }
+            }
+            System.out.println("************************************************");
+            System.out.println("summaryMap: " + summaryMap);
+            // initialize the monthly statistics data
+            double totalIntake = 0.0;
+            int daysTracked = 0;
+            int daysOverGoal = 0;
+            
+            // create the data for each day
+            while (!currentDate.isAfter(endDate)) {
+                DailySugarSummaryDto summary = summaryMap.get(currentDate);
+                
+                if (summary != null) {
+                    // the date with data
+                    double totalIntakeMg = summary.getTotalIntakeMg().doubleValue();
+                    double progressPercentage = summary.getProgressPercentage().doubleValue();
+                    
+                    // only count the days with records
+                    if (summary.getRecordCount() > 0) {
+                        daysTracked++;
+                        totalIntake += totalIntakeMg;
+                        
+                        if (totalIntakeMg > dailyGoalMg) {
+                            daysOverGoal++;
+                        }
+                    }
+                    
+                    // status mapping
+                    String status = mapSugarSummaryStatusToString(summary.getStatus());
+                    
+                    dailySummaries.add(new MonthlyCalendarDto.DailySummaryDto(
+                            currentDate.toString(),
+                            totalIntakeMg,
+                            dailyGoalMg,
+                            progressPercentage,
+                            status,
+                            summary.getRecordCount()
+                    ));
+                } else {
+                    // the date with no data, return the default value
+                    dailySummaries.add(new MonthlyCalendarDto.DailySummaryDto(
+                            currentDate.toString(),
+                            0.0,
+                            dailyGoalMg,
+                            0.0,
+                            "GOOD",
+                            0
+                    ));
+                }
+                
+                currentDate = currentDate.plusDays(1);
+            }
+            
+            // calculate the monthly average intake
+            Double monthlyAverageIntake = daysTracked > 0 ? 
+                    Math.round((totalIntake / daysTracked) * 10.0) / 10.0 : 0.0;
+            
+            // calculate the overall achievement rate
+            Double overallAchievementRate = daysTracked > 0 ?
+                    Math.round(((double)(daysTracked - daysOverGoal) / daysTracked) * 100.0 * 10.0) / 10.0 : 100.0;
+            
+            // build the response
+            MonthlyCalendarDto result = new MonthlyCalendarDto(
+                    year,
+                    month,
+                    monthlyAverageIntake,
+                    daysTracked,
+                    daysOverGoal,
+                    overallAchievementRate,
+                    dailySummaries
+            );
+            
+            return ResponseMessage.success(result);
+            
+        } catch (Exception e) {
+            return new ResponseMessage<>(500, "Failed to get monthly calendar data: " + e.getMessage(), null);
+        }
+    }
+    
+    /**
+     * status mapping helper method
+     */
+    private String mapSugarSummaryStatusToString(org.user.enums.SugarSummaryStatus status) {
+        if (status == null) {
+            return "GOOD";
+        }
+        switch (status) {
+            case GOOD:
+                return "GOOD";
+            case WARNING:
+                return "WARNING";
+            case OVER_LIMIT:
+                return "OVER_LIMIT";
+            default:
+                return "GOOD";
         }
     }
 } 
