@@ -3,6 +3,7 @@ package org.user.service;
 import org.user.pojo.DTO.SugarIntakeHistoryDto;
 import org.user.pojo.DTO.ResponseMessage;
 import org.user.pojo.DTO.MonthlyStatsDto;
+import org.user.pojo.DTO.MonthlyCalendarDto;
 
 
 import java.time.LocalDateTime;
@@ -66,11 +67,6 @@ public interface ISugarIntakeHistoryService {
     ResponseMessage<List<SugarIntakeHistoryDto>> searchSugarIntakeRecordsByFoodName(Integer userId, String foodName);
     
     /**
-     * query records by barcode
-     */
-    ResponseMessage<List<SugarIntakeHistoryDto>> getSugarIntakeRecordsByBarcode(String barcode);
-    
-    /**
      * delete all records by user id
      */
     ResponseMessage<String> deleteAllSugarIntakeRecordsByUserId(Integer userId);
@@ -129,4 +125,13 @@ public interface ISugarIntakeHistoryService {
      * @return statistics data
      */
     ResponseMessage<Map<String, Object>> getSugarIntakeHistoryStats(Integer userId, String period);
+    
+    /**
+     * get monthly sugar calendar data
+     * @param userId user id
+     * @param year year
+     * @param month month (1-12)
+     * @return monthly calendar data
+     */
+    ResponseMessage<MonthlyCalendarDto> getMonthlyCalendarData(Integer userId, Integer year, Integer month);
 } 

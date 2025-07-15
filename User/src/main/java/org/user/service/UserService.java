@@ -49,6 +49,10 @@ public class UserService implements IUserService{
     // register user
     @Override
     public User add(UserDto user) {
+        // validate required fields for registration
+        validateUserRegistrationData(user);
+        
+        // check if username already exists
         User existingUser = userRepository.findByUserName(user.getUserName());
         if (existingUser != null) {
             throw new IllegalArgumentException("Error: user name already exists.");
@@ -240,5 +244,37 @@ public class UserService implements IUserService{
         
         // delete the user allergen
         userAllergenRepository.deleteById(userAllergenId);
+    }
+    
+    /**
+     * Validate user registration data
+     * @param user UserDto to validate
+     * @throws IllegalArgumentException if validation fails
+     */
+    private void validateUserRegistrationData(UserDto user) {
+        // check required fields
+        if (user.getHeightCm() == null) {
+            throw new IllegalArgumentException("Error: height cannot be empty.");
+        }
+        if (user.getWeightKg() == null) {
+            throw new IllegalArgumentException("Error: weight cannot be empty.");
+        }
+        if (user.getActivityLevel() == null) {
+            throw new IllegalArgumentException("Error: activity level cannot be empty.");
+        }
+        if (user.getNutritionGoal() == null) {
+            throw new IllegalArgumentException("Error: nutrition goal cannot be empty.");
+        }
+        
+        // validate field values
+        if (user.getHeightCm() <= 0 || user.getHeightCm() > 300) {
+            throw new IllegalArgumentException("Error: height must be between 1-300 cm.");
+        }
+        if (user.getWeightKg() <= 0 || user.getWeightKg() > 1000) {
+            throw new IllegalArgumentException("Error: weight must be between 1-1000 kg.");
+        }
+        if (user.getAge() != null && (user.getAge() < 0 || user.getAge() > 150)) {
+            throw new IllegalArgumentException("Error: age must be between 0-150 years.");
+        }
     }
 }

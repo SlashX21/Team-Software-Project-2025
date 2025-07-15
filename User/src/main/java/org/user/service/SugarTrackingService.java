@@ -15,7 +15,9 @@ public class SugarTrackingService implements ISugarTrackingService {
     
     @Autowired
     private SugarGoalsRepository sugarGoalsRepository;
-    
+    @Autowired
+    private IDailySugarSummaryService dailySugarSummaryService;
+
     @Override
     public SugarGoalResponseDto getUserSugarGoal(Integer userId) {
         // find user's current active sugar goal
@@ -29,13 +31,14 @@ public class SugarTrackingService implements ISugarTrackingService {
                     activeGoal.getUpdatedAt()
             );
         } else {
+            throw new IllegalArgumentException("No active sugar goal found for user: " + userId);
             // if no goal is set, return default goal
-            String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-            return new SugarGoalResponseDto(
-                    25000.0, // default daily goal: 25g
-                    currentTime,
-                    currentTime
-            );
+            // String currentTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            // return new SugarGoalResponseDto(
+            //         25000.0, // default daily goal: 25g
+            //         currentTime,
+            //         currentTime
+            // );
         }
     }
     
@@ -52,7 +55,7 @@ public class SugarTrackingService implements ISugarTrackingService {
             existingGoal.setGoalLevel(goalRequestDto.getGoalLevel());
             existingGoal.setUpdatedAt(currentTime);
             SugarGoals savedGoal = sugarGoalsRepository.save(existingGoal);
-            
+            dailySugarSummaryService.updateDailySugarSummary(savedGoal.getUserId(), LocalDateTime.now().toLocalDate());
             return new SugarGoalResponseDto(
                     savedGoal.getDailyGoalMg(),
                     savedGoal.getGoalLevel(),
@@ -68,7 +71,7 @@ public class SugarTrackingService implements ISugarTrackingService {
             newGoal.setCreatedAt(currentTime);
             newGoal.setUpdatedAt(currentTime);
             SugarGoals savedGoal = sugarGoalsRepository.save(newGoal);
-            
+            dailySugarSummaryService.updateDailySugarSummary(savedGoal.getUserId(), LocalDateTime.now().toLocalDate());
             return new SugarGoalResponseDto(
                     savedGoal.getDailyGoalMg(),
                     savedGoal.getGoalLevel(),

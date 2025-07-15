@@ -36,9 +36,9 @@ public class SugarIntakeHistoryDto {
     @JsonProperty("source_type")
     private SourceType sourceType = SourceType.MANUAL;
     
-    @Size(max = 255, message = "Barcode cannot exceed 255 characters")
-    @JsonProperty("barcode")
-    private String barcode;
+    // @Size(max = 255, message = "Barcode cannot exceed 255 characters")
+    // @JsonProperty("barcode")
+    // private String barcode;
     
     @Size(max = 50, message = "Serving size cannot exceed 50 characters")
     @JsonProperty("serving_size")
@@ -106,13 +106,13 @@ public class SugarIntakeHistoryDto {
         this.sourceType = sourceType;
     }
     
-    public String getBarcode() {
-        return barcode;
-    }
+    // public String getBarcode() {
+    //     return barcode;
+    // }
     
-    public void setBarcode(String barcode) {
-        this.barcode = barcode;
-    }
+    // public void setBarcode(String barcode) {
+    //     this.barcode = barcode;
+    // }
     
     public String getServingSize() {
         return servingSize;
@@ -139,7 +139,6 @@ public class SugarIntakeHistoryDto {
                 ", sugarAmountMg=" + sugarAmountMg +
                 ", intakeTime=" + intakeTime +
                 ", sourceType=" + sourceType +
-                ", barcode='" + barcode + '\'' +
                 ", servingSize='" + servingSize + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
