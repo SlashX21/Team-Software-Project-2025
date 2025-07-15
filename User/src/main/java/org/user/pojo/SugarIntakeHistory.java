@@ -29,8 +29,8 @@ public class SugarIntakeHistory {
     @Column(name = "consumed_at", nullable = false, updatable = false)
     private LocalDateTime consumedAt;
     
-    @Column(name = "barcode", length = 255)
-    private String barcode;
+    // @Column(name = "barcode", length = 255)
+    // private String barcode;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -103,13 +103,13 @@ public class SugarIntakeHistory {
         this.consumedAt = consumedAt;
     }
     
-    public String getBarcode() {
-        return barcode;
-    }
+    // public String getBarcode() {
+    //     return barcode;
+    // }
     
-    public void setBarcode(String barcode) {
-        this.barcode = barcode;
-    }
+    // public void setBarcode(String barcode) {
+    //     this.barcode = barcode;
+    // }
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
@@ -128,7 +128,6 @@ public class SugarIntakeHistory {
                 ", sugarAmountMg=" + sugarAmountMg +
                 ", quantity=" + quantity +
                 ", consumedAt=" + consumedAt +
-                ", barcode='" + barcode + '\'' +
                 ", createdAt=" + createdAt +
                 '}';
     }
