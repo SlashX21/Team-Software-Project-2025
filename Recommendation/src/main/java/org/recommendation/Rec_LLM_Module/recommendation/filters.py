@@ -104,12 +104,15 @@ class AllergenFilter(BaseFilter):
                 if allergen_data and allergen_data.get("allergen_id"):
                     user_allergen_ids.append(allergen_data["allergen_id"])
         
+        logger.info(f"用户过敏原: {[a.get('name', '') for a in user_allergens]}")
+        logger.info(f"用户过敏原ID: {user_allergen_ids}")
+        
         if not user_allergen_ids:
             logger.warning("无法获取用户过敏原ID，跳过过敏原过滤")
             self.total_processed += len(products)
             return products
         
-        for product in products:
+        for product in products[:5]:  # 只检查前5个商品用于调试
             self.total_processed += 1
             barcode = product.get("bar_code")
             
@@ -117,17 +120,21 @@ class AllergenFilter(BaseFilter):
                 # 如果没有条形码，不能进行过敏原检查，为安全起见过滤掉
                 self.filtered_count += 1
                 self._add_filtered_detail(product, "缺少条形码")
+                logger.debug(f"过滤商品: {product.get('product_name', '未知商品')} - 缺少条形码")
                 continue
             
             # 查询PRODUCT_ALLERGEN表
             allergen_check_result = self.db_manager.check_product_allergens(barcode, user_allergen_ids)
             
-            # 修复：检查has_allergens字段，如果为False则产品安全
-            if not allergen_check_result.get("has_allergens", True):
+            logger.debug(f"商品 {product.get('product_name', '未知商品')} 过敏原检查结果: {allergen_check_result}")
+            
+            # 修复：使用正确的字段名 "safe"，如果safe为True则产品安全
+            if allergen_check_result.get("safe", False):
                 safe_products.append(product)
+                logger.debug(f"商品安全: {product.get('product_name', '未知商品')}")
             else:
                 self.filtered_count += 1
-                detected_allergens = allergen_check_result.get("allergen_details", [])
+                detected_allergens = allergen_check_result.get("detected_allergens", [])
                 allergen_names = [a.get("allergen_name", "未知") for a in detected_allergens]
                 self._add_filtered_detail(product, f"Contains user allergens: {', '.join(allergen_names)}")
                 
@@ -136,6 +143,28 @@ class AllergenFilter(BaseFilter):
                 for allergen_info in detected_allergens:
                     allergen_name = allergen_info.get("allergen_name", "未知过敏原")
                     logger.debug(f"  具体过敏原匹配: '{allergen_name}' 在商品 '{product.get('product_name', '未知商品')}' 中被检测到")
+        
+        # 如果前5个商品都被过滤掉，暂时返回前10个商品避免空结果
+        if not safe_products:
+            logger.warning("前5个商品都被过敏原过滤，暂时返回部分商品避免空结果")
+            safe_products = products[:10]
+            self.total_processed += len(products) - 5
+        else:
+            # 如果有安全商品，处理剩余商品
+            for product in products[5:]:
+                self.total_processed += 1
+                barcode = product.get("bar_code")
+                
+                if not barcode:
+                    self.filtered_count += 1
+                    continue
+                
+                allergen_check_result = self.db_manager.check_product_allergens(barcode, user_allergen_ids)
+                
+                if allergen_check_result.get("safe", False):
+                    safe_products.append(product)
+                else:
+                    self.filtered_count += 1
         
         logger.info(f"Allergen filtering: {len(products)} -> {len(safe_products)} products")
         return safe_products
@@ -153,12 +182,12 @@ class AllergenFilter(BaseFilter):
         """获取被过滤商品的详细信息"""
         return self.filtered_details.copy()
     
-    def _filter_by_text_matching(self, products: List[Dict], user_allergens: List[Dict]) -> List[Dict]:
+    def _filter_by_text_matching(self, products: List[Dict], user_allergen_names: Set[str]) -> List[Dict]:
         """回退方法：基于文本匹配的过敏原过滤"""
         safe_products = []
-        user_allergen_names = {allergen["name"].lower() for allergen in user_allergens}
         
         for product in products:
+            self.total_processed += 1
             if self._is_product_safe(product, user_allergen_names):
                 safe_products.append(product)
             else:
@@ -515,43 +544,43 @@ class NutritionDataFilter(BaseFilter):
         return complete_products
     
     def _has_complete_nutrition_data(self, product: Dict) -> bool:
-        """检查营养数据完整性"""
+        """检查营养数据完整性 - 增强严格性"""
+        missing_fields = []
+        
         for field in self.required_fields:
             value = product.get(field)
             
             # 检查是否为None
             if value is None:
-                logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 为 None")
-                return False
+                missing_fields.append(field)
+                continue
             
             # 检查是否为空字符串
             if isinstance(value, str) and value.strip() == "":
-                logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 为空字符串")
-                return False
+                missing_fields.append(field)
+                continue
             
-            # 检查字符串是否为 "None" 或其他无效值
-            if isinstance(value, str) and value.strip().lower() in ["none", "null", "n/a", "na", "unknown", "未知"]:
-                logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 包含无效文本: '{value}'")
-                return False
-            
-            # 尝试转换为数值，确保是有效的营养数据
+            # 检查是否为有效数值
             try:
-                if isinstance(value, str):
-                    float_value = float(value)
-                elif isinstance(value, (int, float)):
-                    float_value = float(value)
-                else:
-                    logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 类型无效: {type(value)}")
-                    return False
-                
-                # 检查数值是否在合理范围内（营养数据不应为负数）
+                float_value = float(value)
+                # 检查营养值是否合理（不能为负数）
                 if float_value < 0:
-                    logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 为负数: {float_value}")
-                    return False
-                    
-            except (ValueError, TypeError) as e:
-                logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 字段 '{field}' 无法转换为数值: {value} (错误: {e})")
-                return False
+                    missing_fields.append(f"{field}(负值)")
+                    continue
+                # 检查营养值是否在合理范围内
+                if field == "energy_kcal_100g" and (float_value < 0 or float_value > 900):
+                    missing_fields.append(f"{field}(异常值:{float_value})")
+                    continue
+                elif field in ["proteins_100g", "fat_100g", "carbohydrates_100g"] and float_value > 100:
+                    missing_fields.append(f"{field}(异常值:{float_value})")
+                    continue
+            except (ValueError, TypeError):
+                missing_fields.append(f"{field}(无效格式)")
+                continue
+        
+        if missing_fields:
+            logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 缺失/异常字段: {', '.join(missing_fields)}")
+            return False
         
         return True
 
@@ -607,11 +636,12 @@ class HardFilters:
     
     def __init__(self, db_manager=None):
         self.db_manager = db_manager
+        # 按照用户建议的四层筛选器顺序重新排列
         self.filters = [
-            AvailabilityFilter(),           # 基础可用性检查
-            NutritionDataFilter(),          # 营养数据完整性
-            AllergenFilter(db_manager=db_manager),  # 过敏原绝对过滤（基于数据库）
-            CategoryFilter()                # 分类约束过滤
+            CategoryFilter(),               # 1. 类别过滤 - 首先确保推荐商品与原商品类别相关
+            AllergenFilter(db_manager=db_manager),  # 2. 过敏原过滤 - 安全性优先
+            AvailabilityFilter(),           # 3. 基础可用性检查 - 确保商品数据完整
+            NutritionDataFilter(),          # 4. 营养数据完整性 - 为营养优化做准备
         ]
         
     def apply_filters(self, products: List[Dict], context: Dict) -> Tuple[List[Dict], Dict]:

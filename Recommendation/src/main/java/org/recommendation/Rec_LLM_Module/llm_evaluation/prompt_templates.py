@@ -152,7 +152,7 @@ class PromptTemplateManager:
         return self._add_safety_considerations(prompt)
     
     def _get_barcode_scan_template(self) -> str:
-        """Barcode scan prompt template"""
+        """个性化条形码扫描分析模板 - JSON格式输出"""
         return """⚠️ STRICT EXECUTION RULE: You must and can only use the products from the [Recommended Alternatives] list I provide as the basis for analysis and examples. It is strictly forbidden to mention any products outside this list. Violating this rule will be considered a serious error.
 
 ⚠️ IMPORTANT CONSTRAINT: Your analysis and examples must and can only be selected from [Recommended Product #1], [Recommended Product #2], [Recommended Product #3] that I provide. You are absolutely not allowed to mention any other products, including possible [Recommended Product #4], [Recommended Product #5], etc.
@@ -184,13 +184,42 @@ Recommended Alternatives:
 Nutrition Comparison Analysis:
 {nutrition_comparison}
 
-⚠️ STRICT ANALYSIS REQUIREMENTS:
-- You must strictly base your analysis on the recommended product information provided above, and are prohibited from fabricating data or citing unmentioned products
+⚠️ PERSONALIZED ANALYSIS REQUIREMENTS:
+- You must provide analysis strictly tailored to the user's nutrition goal ({nutrition_goal_en}) and activity level ({activity_level_en})
 - Your analysis and examples must and can only be selected from [Recommended Product #1], [Recommended Product #2], [Recommended Product #3]
-- Please use professional but extremely concise language for analysis, strictly controlling the total length between 70 and 90 words
-- The analysis must include three core parts: 1. Core Insight (one sentence highlighting the most critical issue or advantage). 2. Detailed Analysis (use one to two sentences, combined with the above recommendation data to explain the reasons). 3. Action Recommendations (provide 1-2 most direct and valuable suggestions)
-- The output format must strictly follow the "【Core Insight】...【Detailed Analysis】...【Action Recommendations】..." structure for easy program parsing
-- ⚠️ ABSOLUTE PROHIBITION CONSTRAINT: It is absolutely forbidden to mention any product names that do not appear in the above [Recommended Product #1], [Recommended Product #2], [Recommended Product #3] or to fabricate any product information"""
+- ⚠️ ABSOLUTE PROHIBITION CONSTRAINT: It is absolutely forbidden to mention any product names that do not appear in the above [Recommended Product #1], [Recommended Product #2], [Recommended Product #3] or to fabricate any product information
+
+⚠️ GOAL-SPECIFIC GUIDANCE:
+- For Weight Loss goals: Focus on calorie reduction, sugar control, and satiety
+- For Muscle Gain goals: Emphasize protein content, calorie density, and recovery support  
+- For Health Maintenance goals: Highlight nutritional balance, variety, and moderation
+- Always reference the specific activity level when making recommendations
+
+### Output Format Requirements ###
+Please return your analysis strictly in the following JSON format, without any extra explanations, Markdown formatting, or code blocks:
+
+{{
+  "summary": "One sentence core assessment based on user's {nutrition_goal_en} goal and {activity_level_en} activity level (40-60 words)",
+  "detailedAnalysis": "Detailed nutrition analysis with specific data from comparison above, explaining why this product aligns or doesn't align with user goals (80-120 words). All output fields (summary, detailedAnalysis, actionSuggestions) must be in English.", 
+  "actionSuggestions": [
+    "Specific actionable suggestion 1 based on recommended alternatives",
+    "Specific actionable suggestion 2 for achieving nutrition goals",
+    "Specific actionable suggestion 3 for better choices"
+  ]
+}}
+
+### Example Output Format ###
+{{
+  "summary": "Based on your {nutrition_goal_en} goal and {activity_level_en} activity level, this product has high sugar content that may not align with your targets",
+  "detailedAnalysis": "This product contains {original_sugar}g sugar per 100g, which exceeds recommended intake. Compared to recommended alternatives, it has higher calorie density that may not support your {nutrition_goal_en} goals. Consider choosing recommended lower-sugar alternatives that better support your health objectives while meeting your {activity_level_en} nutritional needs.",
+  "actionSuggestions": [
+    "Choose recommended lower-sugar alternatives with less than 10g sugar per 100g",
+    "Based on your {activity_level_en} activity level, moderate intake frequency of high-sugar products", 
+    "Prioritize the first recommended option as it better aligns with your {nutrition_goal_en} goals"
+  ]
+}}
+
+Please ensure your reply is in pure JSON format for easy program parsing."""
 
     def _get_receipt_analysis_template(self) -> str:
         """Receipt analysis template - Enhanced JSON format constraints"""

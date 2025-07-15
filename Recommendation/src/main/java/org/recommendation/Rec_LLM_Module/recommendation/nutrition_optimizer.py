@@ -11,7 +11,7 @@ import numpy as np
 
 from config.constants import (
     NutritionGoal, NUTRITION_STRATEGIES, 
-    NUTRITION_VALIDATION_RANGES, USER_VALIDATION_RANGES
+    NUTRITION_VALIDATION_RANGES, USER_VALIDATION_RANGES, ActivityLevel
 )
 
 logger = logging.getLogger(__name__)
@@ -45,21 +45,32 @@ class NutritionOptimizer:
             营养评分 (0.0 - 1.0)
         """
         try:
-            if user_goal not in self.strategies:
-                logger.warning(f"未知营养目标: {user_goal}，使用默认策略")
-                user_goal = NutritionGoal.MAINTAIN.value
+            # 兼容从数据库直接读取的字符串, 并映射到内部枚举值
+            goal_map = {
+                "WEIGHT_LOSS": NutritionGoal.LOSE_WEIGHT.value,
+                "MUSCLE_GAIN": NutritionGoal.GAIN_MUSCLE.value,
+                "MAINTENANCE": NutritionGoal.MAINTAIN.value
+            }
+            internal_user_goal = goal_map.get(user_goal, user_goal) # 如果找不到映射，则保留原样以便后续处理
+
+            if internal_user_goal not in self.strategies:
+                logger.warning(f"未知营养目标: {internal_user_goal}，使用默认策略")
+                internal_user_goal = NutritionGoal.MAINTAIN.value
             
-            strategy = self.strategies[user_goal]
+            strategy = self.strategies[internal_user_goal]
             
             # 基础营养评分
-            if user_goal == NutritionGoal.LOSE_WEIGHT.value:
+            if internal_user_goal == NutritionGoal.LOSE_WEIGHT.value:
                 score = self._calculate_weight_loss_score(product, strategy)
-            elif user_goal == NutritionGoal.GAIN_MUSCLE.value:
+            elif internal_user_goal == NutritionGoal.GAIN_MUSCLE.value:
                 score = self._calculate_muscle_gain_score(product, strategy)
-            elif user_goal == NutritionGoal.MAINTAIN.value:
+            elif internal_user_goal == NutritionGoal.MAINTAIN.value:
                 score = self._calculate_maintenance_score(product, strategy)
             else:
-                score = self._calculate_general_health_score(product, strategy)
+                # 未知营养目标时默认使用维持健康策略
+                logger.warning(f"未知营养目标: {internal_user_goal}，使用默认维持健康策略")
+                maintain_strategy = self.strategies[NutritionGoal.MAINTAIN.value]
+                score = self._calculate_maintenance_score(product, maintain_strategy)
             
             # 个性化调整
             if user_profile:
@@ -170,24 +181,6 @@ class NutritionOptimizer:
         # 天然成分加分（权重 0.3）
         natural_score = self._assess_natural_content(product)
         score += strategy["natural_bonus"] * natural_score
-        
-        return score
-    
-    def _calculate_general_health_score(self, product: Dict, strategy: Dict) -> float:
-        """计算一般健康策略评分"""
-        score = 0.5  # 基础分数
-        
-        # 营养密度评分
-        nutrient_density = self._calculate_nutrient_density(product)
-        score += strategy.get("nutrient_density", 0.4) * nutrient_density
-        
-        # 天然成分评分
-        natural_score = self._assess_natural_content(product)
-        score += strategy.get("natural_bonus", 0.3) * natural_score
-        
-        # 营养平衡评分
-        balance_score = self._calculate_nutrition_balance(product)
-        score += strategy.get("balance_score", 0.3) * balance_score
         
         return score
     
@@ -377,7 +370,14 @@ class NutritionOptimizer:
                 adjusted_score += 0.05
         
         # 活动水平调整
-        activity_level = user_profile.get("activity_level", "moderate")
+        activity_level_str = user_profile.get("activity_level", "moderate").lower()
+        activity_map = {
+            "moderately_active": ActivityLevel.MODERATE.value,
+            "very_active": ActivityLevel.VERY_ACTIVE.value,
+            "lightly_active": ActivityLevel.LIGHT.value
+        }
+        activity_level = activity_map.get(activity_level_str, activity_level_str)
+
         if activity_level in ["active", "very_active"]:
             # 高活动水平的用户可以接受更多碳水化合物
             carbs = self._safe_get_nutrition_value(product, "carbohydrates_100g")

@@ -39,14 +39,21 @@
     </dependency>
   </dependencies>
 
+
   <!-- <build>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>repackage</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
         <configuration>
           <mainClass>org.product.ProductApplication</mainClass>
-        </configuration>
+        </configuration> 
       </plugin>
     </plugins>
   </build> -->

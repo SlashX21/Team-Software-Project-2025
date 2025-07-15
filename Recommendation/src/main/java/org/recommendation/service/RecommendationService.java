@@ -24,6 +24,9 @@ public class RecommendationService {
     
     @Value("${recommendation.service.api-token:123456}")
     private String apiToken;
+
+    @Value("${product.service.base-url:http://localhost:8082/api}")
+    private String productServiceBaseUrl;
     
     private final RestTemplate restTemplate;
     private final RecommendationLogRepository recommendationLogRepository;
@@ -156,61 +159,89 @@ public class RecommendationService {
     
     /**
      * 获取小票分析推荐
+     * This method now takes product names, looks up their barcodes, and then sends the barcodes to the Python service.
      */
     public ResponseMessage<Map<String, Object>> getReceiptAnalysis(Integer userId, List<Map<String, Object>> purchasedItems) {
         long startTime = System.currentTimeMillis();
         RecommendationLog log = new RecommendationLog(userId, "receipt_scan");
-        
+
         try {
-            // 准备请求头
+            // Step 1: Resolve product names to barcodes
+            List<Map<String, Object>> itemsWithBarcodes = new java.util.ArrayList<>();
+            for (Map<String, Object> item : purchasedItems) {
+                String productName = (String) item.get("productName");
+                Integer quantity = (Integer) item.get("quantity");
+
+                if (productName == null || productName.isEmpty()) {
+                    continue; // Or handle error
+                }
+
+                // Call Product service to get barcode
+                // Note: This assumes the product search API returns a list and we take the first result.
+                // Proper error handling for not found or multiple results should be enhanced.
+                String searchUrl = productServiceBaseUrl + "/product/search?name=" + productName;
+                ResponseEntity<Map> searchResponse = restTemplate.getForEntity(searchUrl, Map.class);
+
+                if (searchResponse.getStatusCode() == HttpStatus.OK && searchResponse.getBody() != null) {
+                    Map<String, Object> searchBody = searchResponse.getBody();
+                    List<Map<String, Object>> products = (List<Map<String, Object>>) searchBody.get("products");
+                    if (products != null && !products.isEmpty()) {
+                        String barcode = (String) products.get(0).get("barcode");
+                        Map<String, Object> newItem = new HashMap<>();
+                        newItem.put("barcode", barcode);
+                        newItem.put("quantity", quantity);
+                        itemsWithBarcodes.add(newItem);
+                    } else {
+                        // Handle case where product name is not found
+                        // For now, we'll just skip it
+                    }
+                }
+            }
+
+            if (itemsWithBarcodes.isEmpty()) {
+                return new ResponseMessage<>(404, "无法从小票商品中识别出任何有效产品", null);
+            }
+
+            // Step 2: Call Python recommendation service with barcodes
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             if (apiToken != null && !apiToken.isEmpty()) {
                 headers.setBearerAuth(apiToken);
             }
-            
-            // 构造请求体
+
             Map<String, Object> requestBody = Map.of(
                 "userId", userId,
-                "purchasedItems", purchasedItems
+                "purchasedItems", itemsWithBarcodes
             );
-            
+
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-            
-            // 调用Python推荐服务
+
             ResponseEntity<Map> response = restTemplate.postForEntity(
-                recommendationServiceBaseUrl + "/recommendations/receipt", 
-                requestEntity, 
+                recommendationServiceBaseUrl + "/recommendations/receipt",
+                requestEntity,
                 Map.class
             );
-            
-            // 计算处理时间
+
             long processingTime = System.currentTimeMillis() - startTime;
             log.setProcessingTimeMs((int) processingTime);
-            
-            // 处理响应数据
+
             Map<String, Object> responseBody = response.getBody();
             if (responseBody != null) {
-                // 记录推荐结果
                 try {
                     log.setRecommendedProducts(objectMapper.writeValueAsString(responseBody));
                 } catch (JsonProcessingException e) {
                     log.setRecommendedProducts("{}");
                 }
-                
-                // 保存日志
                 recommendationLogRepository.save(log);
-                
                 return ResponseMessage.success(responseBody);
             }
-            
+
             return new ResponseMessage<>(500, "推荐服务返回数据格式错误", null);
-            
+
         } catch (Exception e) {
             log.setProcessingTimeMs((int) (System.currentTimeMillis() - startTime));
             log.setLlmAnalysis("Error: " + e.getMessage());
             recommendationLogRepository.save(log);
-            
             return new ResponseMessage<>(500, "调用小票分析服务失败: " + e.getMessage(), null);
         }
     }
