@@ -64,18 +64,52 @@ class _SugarTrackingPageState extends State<SugarTrackingPage> {
       final dailyIntake = futures[0] as DailySugarIntake?;
       final sugarGoal = futures[1] as SugarGoal?;
 
+      // 如果API返回null但有糖分目标，创建默认的DailySugarIntake对象
+      DailySugarIntake? finalDailyIntake = dailyIntake;
+      if (dailyIntake == null && sugarGoal != null) {
+        finalDailyIntake = DailySugarIntake(
+          currentIntakeMg: 0.0,
+          dailyGoalMg: sugarGoal.dailyGoalMg,
+          progressPercentage: 0.0,
+          status: 'good',
+          topContributors: [],
+          date: DateTime.now(),
+        );
+      } else if (dailyIntake == null && sugarGoal == null) {
+        // 如果连目标都没有，使用默认目标值
+        finalDailyIntake = DailySugarIntake(
+          currentIntakeMg: 0.0,
+          dailyGoalMg: 25000.0, // 默认25g目标
+          progressPercentage: 0.0,
+          status: 'good',
+          topContributors: [],
+          date: DateTime.now(),
+        );
+      }
+
       _safeSetState(() {
         _pageState = _pageState.copyWith(
           isLoading: false,
-          dailyIntake: dailyIntake,
+          dailyIntake: finalDailyIntake,
           sugarGoal: sugarGoal,
         );
       });
     } catch (e) {
+      // 即使出错，也提供默认数据以确保圆环可以显示
+      final defaultDailyIntake = DailySugarIntake(
+        currentIntakeMg: 0.0,
+        dailyGoalMg: 25000.0, // 默认25g目标
+        progressPercentage: 0.0,
+        status: 'good',
+        topContributors: [],
+        date: DateTime.now(),
+      );
+
       _safeSetState(() {
         _pageState = _pageState.copyWith(
           isLoading: false,
-          error: 'Failed to load sugar tracking data',
+          dailyIntake: defaultDailyIntake,
+          error: 'Failed to load sugar tracking data. Showing default values.',
         );
       });
     }
@@ -208,9 +242,7 @@ class _SugarTrackingPageState extends State<SugarTrackingPage> {
       ),
       body: _pageState.isLoading
           ? Center(child: CircularProgressIndicator())
-          : _pageState.error != null
-              ? _buildErrorState()
-              : _buildContent(),
+          : _buildContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddSugarDialog,
         backgroundColor: AppColors.primary,
@@ -219,26 +251,10 @@ class _SugarTrackingPageState extends State<SugarTrackingPage> {
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: AppColors.alert),
-          SizedBox(height: 16),
-          Text(_pageState.error!, style: AppStyles.bodyRegular),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadSugarData,
-            child: Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildContent() {
     final dailyIntake = _pageState.dailyIntake;
+    // 现在dailyIntake总是有值（通过默认数据保证）
     if (dailyIntake == null) {
       return Center(
         child: Column(
@@ -258,11 +274,39 @@ class _SugarTrackingPageState extends State<SugarTrackingPage> {
       padding: EdgeInsets.all(16),
       child: Column(
         children: [
+          // 显示错误消息（如果有的话）
+          if (_pageState.error != null) ...[
+            Container(
+              margin: EdgeInsets.only(bottom: 16),
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _pageState.error!,
+                      style: TextStyle(
+                        color: Colors.orange[700],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Center(
             child: _buildProgressCard(dailyIntake),
           ),
           SizedBox(height: 24),
           _buildDailyIntakeRecords(dailyIntake),
+          SizedBox(height: 80), // 为FloatingActionButton留出空间
         ],
       ),
     );

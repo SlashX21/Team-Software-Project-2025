@@ -44,29 +44,25 @@ class DailySugarIntake {
 
   // 获取状态显示文字
   String get statusText {
-    switch (status) {
-      case 'good':
-        return 'Good Progress';
-      case 'warning':
-        return 'Warning';
-      case 'over_limit':
-        return 'Over Limit';
-      default:
-        return 'Unknown';
+    // 优先基于progressPercentage计算状态文字，因为后端status可能不准确
+    if (progressPercentage > 100) {
+      return 'Over Limit';
+    } else if (progressPercentage > 70) {
+      return 'Warning';
+    } else {
+      return 'Good Progress';
     }
   }
 
   // 获取状态颜色
   Color get statusColor {
-    switch (status) {
-      case 'good':
-        return Color(0xFF4CAF50); // 绿色
-      case 'warning':
-        return Color(0xFFFF9800); // 橙色
-      case 'over_limit':
-        return Color(0xFFF44336); // 红色
-      default:
-        return Color(0xFF757575); // 灰色
+    // 优先基于progressPercentage计算颜色，因为后端status可能不准确
+    if (progressPercentage > 100) {
+      return Color(0xFFF44336); // 红色
+    } else if (progressPercentage > 70) {
+      return Color(0xFFFF9800); // 橙色
+    } else {
+      return Color(0xFF4CAF50); // 绿色
     }
   }
 

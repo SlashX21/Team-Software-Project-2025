@@ -5,6 +5,7 @@ import 'daily_detail_page.dart';
 import '../../../domain/entities/monthly_sugar_calendar.dart';
 import '../../../domain/entities/daily_sugar_summary.dart';
 import '../../../services/api.dart';
+import '../../../services/user_service.dart';
 
 class MonthlySummaryPage extends StatefulWidget {
   @override
@@ -30,8 +31,15 @@ class _MonthlySummaryPageState extends State<MonthlySummaryPage> {
     });
 
     try {
-      // TODO: Get user ID from UserService
-      final userId = 1; // Replace with actual user ID
+      // Get user ID from UserService
+      final userId = await UserService.instance.getCurrentUserId();
+      if (userId == null) {
+        setState(() {
+          _error = 'User not logged in';
+          _isLoading = false;
+        });
+        return;
+      }
       
       // Call the actual API
       final response = await getMonthlySugarCalendar(
@@ -62,36 +70,27 @@ class _MonthlySummaryPageState extends State<MonthlySummaryPage> {
     final daysInMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
     final dailySummaries = <DailySugarSummary>[];
     
-    // Generate sample data for demonstration
-    for (int day = 1; day <= daysInMonth; day++) {
-      final date = DateTime(_selectedMonth.year, _selectedMonth.month, day);
-      final isToday = DateTime.now();
-      final isFutureDate = date.isAfter(isToday);
-      
-      if (!isFutureDate) {
-        // Generate sample intake data
-        final hasData = day % 3 != 0; // Some days have no data
-        if (hasData) {
-          final intakeMg = 20000 + (day * 2500) % 60000; // Varies between 20-80g in mg
-          final goalMg = 50000.0; // 50g in mg
-          final progress = (intakeMg / goalMg * 100).clamp(0, 150).toDouble();
-          final status = progress <= 80 ? 'good' : progress <= 120 ? 'warning' : 'over_limit';
-          final recordCount = (day % 5) + 1; // 1-5 records per day
-          
-          dailySummaries.add(DailySugarSummary(
-            userId: 1,
-            date: date,
-            totalIntakeMg: intakeMg.toDouble(),
-            dailyGoalMg: goalMg,
-            progressPercentage: progress,
-            status: status,
-            recordCount: recordCount,
-            createdAt: date,
-            updatedAt: date,
-          ));
-        }
-      }
+    // For fallback data, only create summary for today if it's in the current month
+    final now = DateTime.now();
+    final isCurrentMonth = _selectedMonth.year == now.year && _selectedMonth.month == now.month;
+    
+    if (isCurrentMonth) {
+      // Only add today's data with 0 intake if it's the current month
+      final todaySummary = DailySugarSummary(
+        userId: 1, // Will be updated once backend is connected
+        date: DateTime(now.year, now.month, now.day),
+        totalIntakeMg: 0.0, // Start with 0 intake
+        dailyGoalMg: 25000.0, // Default 25g goal
+        progressPercentage: 0.0,
+        status: 'good',
+        recordCount: 0,
+        createdAt: now,
+        updatedAt: now,
+      );
+      dailySummaries.add(todaySummary);
     }
+    
+    // All historical dates should have NO data, so they appear as empty circles
     
     return MonthlySugarCalendar(
       year: _selectedMonth.year,
@@ -418,6 +417,7 @@ class _MonthlySummaryPageState extends State<MonthlySummaryPage> {
     final isToday = _isToday(date);
     final isFutureDate = date.isAfter(DateTime.now());
     final isCurrentMonth = date.month == _selectedMonth.month;
+    
     
     return GestureDetector(
       onTap: (isFutureDate || !isCurrentMonth) ? null : () => _navigateToDailyDetail(date),

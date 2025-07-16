@@ -59,15 +59,13 @@ class SugarProgressRing extends StatelessWidget {
   }
   
   Color _getProgressColor() {
-    switch (status) {
-      case 'good':
-        return Colors.green[600]!;
-      case 'warning':
-        return Colors.orange[600]!;
-      case 'over_limit':
-        return Colors.red[600]!;
-      default:
-        return Colors.grey[600]!;
+    // 优先基于progressPercentage计算颜色，因为后端status可能不准确
+    if (progressPercentage > 100) {
+      return Colors.red[600]!;    // 超过100%为红色
+    } else if (progressPercentage > 70) {
+      return Colors.orange[600]!; // 70%-100%为橙色
+    } else {
+      return Colors.green[600]!;  // 70%以下为绿色
     }
   }
 }

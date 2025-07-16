@@ -1,8 +1,8 @@
 enum GoalLevel {
-  strict('Strict', 25000.0),
-  moderate('Moderate', 40000.0),
-  relaxed('Relaxed', 50000.0),
-  custom('Custom', 0.0);
+  strict('STRICT', 25000.0),
+  moderate('MODERATE', 40000.0),
+  relaxed('RELAXED', 50000.0),
+  custom('CUSTOM', 0.0);
 
   const GoalLevel(this.value, this.defaultMg);
   final String value;
@@ -63,13 +63,13 @@ class SugarGoal {
     }
     // 向后兼容，基于目标值推断
     if (dailyGoalMg <= 25000) {
-      return 'Strict';
+      return 'STRICT';
     } else if (dailyGoalMg <= 40000) {
-      return 'Moderate';
+      return 'MODERATE';
     } else if (dailyGoalMg <= 50000) {
-      return 'Relaxed';
+      return 'RELAXED';
     } else {
-      return 'Custom';
+      return 'CUSTOM';
     }
   }
 

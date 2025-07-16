@@ -20,12 +20,16 @@ class MonthlySugarCalendar {
   });
   
   factory MonthlySugarCalendar.fromJson(Map<String, dynamic> json) {
+    // 适配后端返回的数据结构 - 使用 dailySummaries 而不是 monthlySummaries
+    final summaries = (json['dailySummaries'] as List?)
+        ?.map((item) => DailySugarSummary.fromJson(item))
+        .toList() ?? [];
+    
+    // 直接使用后端返回的年月和统计数据
     return MonthlySugarCalendar(
       year: json['year'] ?? DateTime.now().year,
       month: json['month'] ?? DateTime.now().month,
-      dailySummaries: (json['dailySummaries'] as List?)
-          ?.map((item) => DailySugarSummary.fromJson(item))
-          .toList() ?? [],
+      dailySummaries: summaries,
       monthlyAverageIntake: json['monthlyAverageIntake']?.toDouble() ?? 0.0,
       daysTracked: json['daysTracked'] ?? 0,
       daysOverGoal: json['daysOverGoal'] ?? 0,
@@ -57,11 +61,12 @@ class MonthlySugarCalendar {
   // 获取指定日期的汇总数据
   DailySugarSummary? getSummaryForDate(DateTime date) {
     try {
-      return dailySummaries.firstWhere(
+      final result = dailySummaries.firstWhere(
         (summary) => summary.date.day == date.day && 
                     summary.date.month == date.month && 
                     summary.date.year == date.year
       );
+      return result;
     } catch (e) {
       return null;
     }

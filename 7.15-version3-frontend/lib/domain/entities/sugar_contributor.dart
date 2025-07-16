@@ -54,11 +54,11 @@ class SugarContributor {
     final difference = now.difference(consumedAt);
 
     if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} min ago';
+      return '${difference.inMinutes.abs()} min ago';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours} hr ago';
+      return '${difference.inHours.abs()} hr ago';
     } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
+      return '${difference.inDays.abs()} days ago';
     } else {
       return '${consumedAt.day}/${consumedAt.month}/${consumedAt.year}';
     }

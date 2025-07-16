@@ -140,7 +140,7 @@ class _SugarGoalSettingPageState extends State<SugarGoalSettingPage> {
         return;
       }
 
-      final success = await setSugarGoal(userId, _sliderValue, _selectedPreset);
+      final success = await setSugarGoal(userId, _sliderValue, _selectedPreset.toUpperCase());
 
       setState(() => _isLoading = false);
 

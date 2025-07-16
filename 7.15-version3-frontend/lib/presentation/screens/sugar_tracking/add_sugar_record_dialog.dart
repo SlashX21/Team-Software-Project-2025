@@ -57,6 +57,18 @@ class _AddSugarRecordDialogState extends State<AddSugarRecordDialog> {
   void _onSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // 检查是否是未来时间
+    if (_selectedDateTime.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cannot add sugar record for future time.'),
+          backgroundColor: AppColors.alert,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -334,7 +346,7 @@ class _AddSugarRecordDialogState extends State<AddSugarRecordDialog> {
         ),
         SizedBox(height: 4),
         Text(
-          'Tap to modify intake time',
+          'Tap to modify intake time (cannot be in the future)',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey[500],
@@ -387,14 +399,28 @@ class _AddSugarRecordDialogState extends State<AddSugarRecordDialog> {
       );
 
       if (pickedTime != null) {
-        setState(() {
-          _selectedDateTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
+        final newDateTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+        
+        // 检查是否是未来时间
+        if (newDateTime.isAfter(DateTime.now())) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cannot select future time. Please choose a time in the past.'),
+              backgroundColor: AppColors.alert,
+              duration: Duration(seconds: 3),
+            ),
           );
+          return;
+        }
+        
+        setState(() {
+          _selectedDateTime = newDateTime;
         });
       }
     }

@@ -32,8 +32,8 @@ class DailySugarSummary {
       progressPercentage: json['progressPercentage']?.toDouble() ?? 0.0,
       status: json['status'] ?? 'unknown',
       recordCount: json['recordCount'] ?? 0,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
     );
   }
 
@@ -53,15 +53,13 @@ class DailySugarSummary {
   
   // 计算属性
   Color get statusColor {
-    switch (status) {
-      case 'good':
-        return Colors.green;
-      case 'warning':
-        return Colors.orange;
-      case 'over_limit':
-        return Colors.red;
-      default:
-        return Colors.grey;
+    // 优先基于progressPercentage计算颜色，因为后端status可能不准确
+    if (progressPercentage > 100) {
+      return Colors.red;    // 超过100%为红色
+    } else if (progressPercentage > 70) {
+      return Colors.orange; // 70%-100%为橙色
+    } else {
+      return Colors.green;  // 70%以下为绿色
     }
   }
   
@@ -69,6 +67,18 @@ class DailySugarSummary {
   String get formattedDailyGoal => _formatSugarAmount(dailyGoalMg);
   bool get hasRecords => recordCount > 0;
   bool get isGoalAchieved => progressPercentage <= 100;
+  
+  // 获取状态显示文字
+  String get statusText {
+    // 优先基于progressPercentage计算状态文字，因为后端status可能不准确
+    if (progressPercentage > 100) {
+      return 'Over Limit';
+    } else if (progressPercentage > 70) {
+      return 'Warning';
+    } else {
+      return 'Good Progress';
+    }
+  }
   
   String _formatSugarAmount(double amountMg) {
     if (amountMg >= 1000) {
