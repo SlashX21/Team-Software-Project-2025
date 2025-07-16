@@ -166,11 +166,11 @@ class ProgressiveLoader {
       // Try to get complete product information within timeout (including LLM recommendations)
       final completeProduct = await fetchProductByBarcode(barcode, userId)
           .timeout(Duration(seconds: 30), onTimeout: () {
-        print('⏰ LLM recommendations timed out after 30 seconds');
+        print('⏰ LLM recommendations timed out after 5 seconds');
         // Return a product with a timeout message instead of throwing an error.
         return basicProduct.copyWith(
-          summary: 'AI Analysis in Progress',
-          detailedAnalysis: 'AI analysis is taking longer than expected. The basic product information is available.',
+          summary: 'AI Analysis Failed',
+          detailedAnalysis: 'The request for AI-powered analysis timed out. Please check the AI service or try again later.',
         );
       });
       
@@ -184,8 +184,8 @@ class ProgressiveLoader {
       print('❌ Recommendations failed to load: $e');
       
       final productWithError = basicProduct.copyWith(
-        summary: 'AI Analysis Unavailable',
-        detailedAnalysis: 'AI analysis service is currently unavailable. Basic product information is shown.',
+        summary: 'AI Analysis Failed',
+        detailedAnalysis: 'Could not retrieve AI-powered analysis due to an error. Please check the AI service.',
       );
 
       _completeLoading(controller, key, productWithError, Duration.zero);

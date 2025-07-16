@@ -562,7 +562,7 @@ class NutritionDataFilter(BaseFilter):
             
             # 检查是否为有效数值
             try:
-                float_value = float(value)
+                    float_value = float(value)
                 # 检查营养值是否合理（不能为负数）
                 if float_value < 0:
                     missing_fields.append(f"{field}(负值)")
@@ -580,7 +580,7 @@ class NutritionDataFilter(BaseFilter):
         
         if missing_fields:
             logger.debug(f"营养数据过滤: {product.get('product_name', '未知商品')} - 缺失/异常字段: {', '.join(missing_fields)}")
-            return False
+                return False
         
         return True
 

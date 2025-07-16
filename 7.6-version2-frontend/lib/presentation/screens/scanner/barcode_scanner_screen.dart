@@ -517,6 +517,52 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     }
   }
 
+  Future<void> _uploadReceipt() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    setState(() {
+      _isLoading = true;
+      _receiptItems.clear();
+      _currentAnalysis = null;
+    });
+
+    try {
+      final result = await uploadReceiptImage(picked, widget.userId);
+
+      final items = result['itemAnalyses'] ?? [];
+      final llm = result['llmInsights'] ?? {};
+
+      setState(() {
+        _receiptItems = List<Map<String, dynamic>>.from(items);
+        _currentAnalysis = ProductAnalysis(
+          name: 'Receipt Summary',
+          imageUrl: '',
+          ingredients: [],
+          detectedAllergens: [],
+          summary: (llm['summary'] as String?)?.isNotEmpty == true
+              ? llm['summary']
+              : 'No summary provided by AI. The product seems acceptable based on available data.',
+          detailedAnalysis: (llm['keyFindings'] is List && llm['keyFindings'].isNotEmpty)
+              ? (llm['keyFindings'] as List).join('\n')
+              : 'No key findings were detected from your receipt items.',
+          actionSuggestions: (llm['improvementSuggestions'] is List && llm['improvementSuggestions'].isNotEmpty)
+              ? List<String>.from(llm['improvementSuggestions'])
+              : ['Try selecting more varied products for better AI suggestions.'],
+        );
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Upload failed: $e'),
+          backgroundColor: AppColors.alert,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
