@@ -447,10 +447,10 @@ public class SugarIntakeHistoryService implements ISugarIntakeHistoryService {
             // sort by sugar amount and get the top 5
             dailyRecords.stream()
                     .sorted((a, b) -> Float.compare(b.getSugarAmountMg(), a.getSugarAmountMg()))
-                    .limit(5)
+                    // .limit(5)
                     .forEach(record -> {
                         Map<String, Object> contributor = new HashMap<>();
-                        contributor.put("id", record.getIntakeId()); // int类型，直接返回Integer
+                        contributor.put("id", record.getIntakeId());
                         contributor.put("foodName", record.getFoodName());
                         contributor.put("sugarAmountMg", Math.round(record.getSugarAmountMg()));
                         contributor.put("quantity", record.getQuantity() != null ? record.getQuantity() : 1.0f);
