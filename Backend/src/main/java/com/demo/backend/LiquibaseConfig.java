@@ -8,10 +8,9 @@ import org.springframework.context.annotation.Configuration;
 import liquibase.integration.spring.SpringLiquibase;
 
 // Liquibase配置，用于自动创建数据库表结构
-// 已禁用，因为使用手动导入的数据库结构
-// @Configuration
+@Configuration
 public class LiquibaseConfig {
-    // @Bean
+    @Bean
     public SpringLiquibase springLiquibase(DataSource dataSource) {
         SpringLiquibase springLiquibase = new SpringLiquibase();
         springLiquibase.setDataSource(dataSource);

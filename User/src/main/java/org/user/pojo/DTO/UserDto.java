@@ -31,16 +31,16 @@ public class UserDto {
     // @NotNull(message = "性别不能为空")
     private Gender gender;
 
-    // @NotNull(message = "身高不能为空")
+    // @NotNull(message = "height cannot be empty")
     private Integer heightCm;
 
-    // @NotNull(message = "体重不能为空")
+    // @NotNull(message = "weight cannot be empty")
     private Float weightKg;
 
-    // @NotNull(message = "活动水平不能为空")
+    // @NotNull(message = "activity level cannot be empty")
     private ActivityLevel activityLevel;
 
-    // @NotNull(message = "营养目标不能为空")
+    // @NotNull(message = "nutrition goal cannot be empty")
     private NutritionGoal nutritionGoal;
 
     private Float dailyCaloriesTarget;
