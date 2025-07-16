@@ -9,5 +9,4 @@
     <!-- 这个全局属性文件里面定义了所有子模块都遵循的规则, 比方说: 类型转换-->
     <include file="classpath:db/moduleChangelog/healthManagement/microhard_monthly_statistics_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/healthManagement/microhard_sugar_goals_1.0.0.xml"></include>
-    <include file="classpath:db/moduleChangelog/healthManagement/microhard_daily_sugar_summary_1.0.0.xml"></include>
 </databaseChangeLog>

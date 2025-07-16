@@ -22,21 +22,18 @@ public class ResponseMessage <T>{
     public static <T>ResponseMessage<T> success(){
         return new ResponseMessage(HttpStatus.OK.value(), "success!", null);
     }
-    public static <T>ResponseMessage<T> success(Integer code, String message, T data){
-        return new ResponseMessage(code, message, data);
-    }
 
 
-    public static <T>ResponseMessage<T> error(String message){
-        return new ResponseMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(), message, null);
-    }
+
     
-    // public static ResponseMessage<String> error(String message){
-    //     return new ResponseMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(), message, null);
-    // }
+    public static ResponseMessage<String> error(String message){
+        return new ResponseMessage(HttpStatus.INTERNAL_SERVER_ERROR.value(), message, null);
+
+    }
 
     public static ResponseMessage<String> error(Integer code, String message){
         return new ResponseMessage(code, message, null);
+
     }
 
     public static ResponseMessage<String> error(){

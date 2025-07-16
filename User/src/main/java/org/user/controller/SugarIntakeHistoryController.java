@@ -143,7 +143,7 @@ public class SugarIntakeHistoryController {
     }
     
     /**
-     * add sugar intake record - according to the new API specification
+     * 添加糖分记录 - 按照新的API规范
      * POST /user/{userId}/sugar-tracking/record
      */
     @PostMapping("/record")
@@ -152,11 +152,11 @@ public class SugarIntakeHistoryController {
             @RequestBody Map<String, Object> requestBody) {
         
         try {
-            // create DTO object
+            // 创建DTO对象
             SugarIntakeHistoryDto dto = new SugarIntakeHistoryDto();
             dto.setUserId(userId);
             
-            // map fields
+            // 映射字段
             if (requestBody.containsKey("foodName")) {
                 dto.setFoodName((String) requestBody.get("foodName"));
             } else {
@@ -180,9 +180,9 @@ public class SugarIntakeHistoryController {
             if (requestBody.containsKey("quantity")) {
                 Object quantity = requestBody.get("quantity");
                 if (quantity instanceof Number) {
-                    // quantity field is stored in the entity, but here we process it by calculating the total sugar intake
+                    // quantity字段存储在实体中，但这里我们通过计算总糖分摄入量来处理
                     Float quantityValue = ((Number) quantity).floatValue();
-                    // calculate total sugar intake = sugar amount per food × quantity
+                    // 计算总糖分摄入量 = 单个食品含糖量 × 数量
                     Float totalSugarMg = dto.getSugarAmountMg() * quantityValue;
                     dto.setSugarAmountMg(totalSugarMg);
                 } else {
@@ -194,11 +194,11 @@ public class SugarIntakeHistoryController {
                     new ResponseMessage<>(400, "quantity is required", null));
             }
             
-            // set intake time
+            // 设置摄入时间
             if (requestBody.containsKey("consumedAt")) {
                 String timeStr = (String) requestBody.get("consumedAt");
                 try {
-                    // support ISO format time
+                    // 支持ISO格式时间
                     if (timeStr.contains("T")) {
                         timeStr = convertIsoToDateTime(timeStr);
                     }
@@ -209,11 +209,11 @@ public class SugarIntakeHistoryController {
                         new ResponseMessage<>(400, "Invalid consumedAt format. Use yyyy-MM-dd HH:mm:ss", null));
                 }
             } else {
-                // default current time
+                // 默认当前时间
                 dto.setIntakeTime(LocalDateTime.now());
             }
             
-            // set other optional fields
+            // 设置其他可选字段
             if (requestBody.containsKey("sourceType")) {
                 String sourceType = (String) requestBody.get("sourceType");
                 try {
@@ -225,18 +225,19 @@ public class SugarIntakeHistoryController {
                 dto.setSourceType(SourceType.MANUAL);
             }
             
-            // if (requestBody.containsKey("barcode")) {
-            //     dto.setBarcode((String) requestBody.get("barcode"));
-            // }
+            if (requestBody.containsKey("barcode")) {
+                dto.setBarcode((String) requestBody.get("barcode"));
+            }
             
             if (requestBody.containsKey("servingSize")) {
                 dto.setServingSize((String) requestBody.get("servingSize"));
             }
             
-            // call service to add record
+            // 调用服务添加记录
             ResponseMessage<SugarIntakeHistoryDto> serviceResponse = sugarIntakeHistoryService.addSugarIntakeRecord(dto);
-            if (serviceResponse.getCode() == 201) {
-                // build response data
+            
+            if (serviceResponse.getCode() == 200) {
+                // 构建响应数据
                 SugarIntakeHistoryDto savedRecord = serviceResponse.getData();
                 Map<String, Object> responseData = new HashMap<>();
                 responseData.put("id", savedRecord.getIntakeId().toString());
@@ -366,5 +367,4 @@ public class SugarIntakeHistoryController {
                 new ResponseMessage<>(500, "Failed to delete sugar intake record: " + e.getMessage(), null));
         }
     }
-
 } 

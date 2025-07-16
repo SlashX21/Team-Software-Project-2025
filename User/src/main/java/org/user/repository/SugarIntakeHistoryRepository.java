@@ -57,9 +57,9 @@ public interface SugarIntakeHistoryRepository extends JpaRepository<SugarIntakeH
     List<SugarIntakeHistory> findByUserIdAndFoodNameContainingIgnoreCaseOrderByConsumedAtDesc(Integer userId, String foodName);
     
     /**
-//      * query records by barcode
-//      */
-//     List<SugarIntakeHistory> findByBarcodeOrderByConsumedAtDesc(String barcode);
+     * query records by barcode
+     */
+    List<SugarIntakeHistory> findByBarcodeOrderByConsumedAtDesc(String barcode);
     
     /**
      * delete all records by user id

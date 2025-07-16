@@ -25,13 +25,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.user.service.IUserService;
 import org.user.service.IUserHistoryService;
 import org.user.service.ISugarTrackingService;
-import org.user.service.IDailySugarSummaryService;
 import org.user.pojo.DTO.UserHistoryResponseDto;
 import org.user.pojo.DTO.UserHistoryListDto;
 import org.user.pojo.DTO.SugarGoalResponseDto;
 import org.user.pojo.DTO.SugarGoalRequestDto;
-import org.user.pojo.DTO.MonthlyCalendarDto;
-import org.user.pojo.DTO.DailySugarSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +39,6 @@ import org.user.service.ISugarIntakeHistoryService;
 import org.user.pojo.DTO.SugarIntakeHistoryDto;
 import org.user.enums.SourceType;
 import java.time.LocalDateTime;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
@@ -61,23 +57,13 @@ public class UserController {
     @Autowired ISugarTrackingService sugarTrackingService;
     @Autowired IUserPreferenceService userPreferenceService;
     @Autowired ISugarIntakeHistoryService sugarIntakeHistoryService;
-    @Autowired IDailySugarSummaryService dailySugarSummaryService;
 
     // Register user
     @PostMapping // URL: localhost:8080/user/ method: post
     public ResponseMessage<User> add(@Validated @RequestBody UserDto user){
-        System.out.println("Register user attempt for: " + user.getUserName());
-        try{
-            User userNew = userService.add(user);
-            System.out.println("Register user success for: " + user.getUserName());
-            return ResponseMessage.success(userNew);
-        } catch (IllegalArgumentException e){
-            System.out.println("Registration failed: " + e.getMessage());
-            return new ResponseMessage<>(400, e.getMessage(), null);
-        } catch (Exception e){
-            System.out.println("Internal server error during registration: " + e.getMessage());
-            return new ResponseMessage<>(500, "Internal server error: " + e.getMessage(), null);
-        }
+        System.out.println("Register user success");
+        User userNew = userService.add(user);
+        return ResponseMessage.success(userNew);
     }
 
     // Login user
@@ -429,10 +415,6 @@ public class UserController {
             ResponseMessage<SugarGoalResponseDto> response = new ResponseMessage<>(200, "Success", sugarGoal);
             return ResponseEntity.ok(response);
             
-        } catch (IllegalArgumentException e) {
-            ResponseMessage<SugarGoalResponseDto> errorResponse = new ResponseMessage<>(
-                    404, "No active sugar goal found for user   : " + e.getMessage(), null);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         } catch (Exception e) {
             ResponseMessage<SugarGoalResponseDto> errorResponse = new ResponseMessage<>(
                     500, "Internal server error: " + e.getMessage(), null);
@@ -835,7 +817,8 @@ public class UserController {
             
             // call service to add record
             ResponseMessage<SugarIntakeHistoryDto> serviceResponse = sugarIntakeHistoryService.addSugarIntakeRecord(dto);
-            if (serviceResponse.getCode() == 201) {
+            
+            if (serviceResponse.getCode() == 200) {
                 // build response data
                 SugarIntakeHistoryDto savedRecord = serviceResponse.getData();
                 Map<String, Object> responseData = new HashMap<>();
@@ -850,9 +833,9 @@ public class UserController {
                     DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
                 
                 ResponseMessage<Map<String, Object>> response = new ResponseMessage<>(
-                    201, "Sugar record added successfully", responseData);
+                    200, "Sugar record added successfully", responseData);
                 
-                return ResponseEntity.status(201).body(response);
+                return ResponseEntity.status(200).body(response);
             } else {
                 return ResponseEntity.status(serviceResponse.getCode()).body(
                     new ResponseMessage<>(serviceResponse.getCode(), serviceResponse.getMessage(), null));
@@ -928,8 +911,33 @@ public class UserController {
                 
                 responseData.put("date", originalData.get("date") + "T00:00:00Z");
                 
-                // topContributors data processing - use data from getDailySugarTrackingData
-                responseData.put("topContributors", originalData.get("topContributors"));
+                // topContributors data processing - get actual sugar intake records
+                List<Map<String, Object>> topContributors = new ArrayList<>();
+                
+                // get actual sugar intake records of the day
+                ResponseMessage<List<SugarIntakeHistoryDto>> dailyRecords = 
+                    sugarIntakeHistoryService.getSugarIntakeRecordsByUserIdAndDate(userId, date);
+                
+                if (dailyRecords.getCode() == 200 && dailyRecords.getData() != null) {
+                    List<SugarIntakeHistoryDto> records = dailyRecords.getData();
+                    
+                    // sort by sugar amount, get top 5
+                    records.stream()
+                            .sorted((a, b) -> Float.compare(b.getSugarAmountMg(), a.getSugarAmountMg()))
+                            .limit(5)
+                            .forEach(record -> {
+                                Map<String, Object> contributor = new HashMap<>();
+                                contributor.put("id", record.getIntakeId().toString());
+                                contributor.put("foodName", record.getFoodName());
+                                contributor.put("sugarAmountMg", Math.round(record.getSugarAmountMg()));
+                                contributor.put("quantity", 1.0); // 因为前端已将总糖分计算好
+                                contributor.put("consumedAt", record.getIntakeTime().format(
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
+                                topContributors.add(contributor);
+                            });
+                }
+                
+                responseData.put("topContributors", topContributors);
                 
                 ResponseMessage<Map<String, Object>> finalResponse = new ResponseMessage<>(200, "success", responseData);
                 return ResponseEntity.ok(finalResponse);
@@ -1051,244 +1059,6 @@ public class UserController {
             errorData.put("message", "Internal server error: " + e.getMessage());
             errorData.put("data", null);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseMessage<>(500, "Internal server error", errorData));
-        }
-    }
-
-    /**
-     * get daily sugar summary
-     * GET /user/{userId}/sugar-tracking/daily-summary/{date}
-     */
-    @GetMapping("/{userId}/sugar-tracking/daily-summary/{date}")
-    public ResponseEntity<ResponseMessage<DailySugarSummaryDto>> getDailySugarSummary(
-            @PathVariable Integer userId,
-            @PathVariable String date) {
-        
-        try {
-            // parse the date parameter
-            LocalDate targetDate;
-            try {
-                targetDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "Invalid date format. Use yyyy-MM-dd", null));
-            }
-            
-            // call the service to get the daily summary, if it doesn't exist, it will be automatically generated
-            ResponseMessage<DailySugarSummaryDto> response = dailySugarSummaryService.getDailySummaryByDate(userId, targetDate);
-            
-            if (response.getCode() == 200) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.status(response.getCode()).body(response);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                new ResponseMessage<>(500, "Failed to get daily sugar summary: " + e.getMessage(), null));
-        }
-    }
-
-    /**
-     * recalculate daily sugar summary
-     * PUT /user/{userId}/sugar-tracking/daily-summary/{date}/recalculate
-     */
-    @PutMapping("/{userId}/sugar-tracking/daily-summary/{date}/recalculate")
-    public ResponseEntity<ResponseMessage<Map<String, Object>>> recalculateDailySugarSummary(
-            @PathVariable Integer userId,
-            @PathVariable String date) {
-        
-        try {
-            // parse the date parameter
-            LocalDate targetDate;
-            try {
-                targetDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "Invalid date format. Use yyyy-MM-dd", null));
-            }
-            
-            // get the old summary data before recalculation (if exists)
-            // Note: We need to directly query from repository to avoid auto-generation
-            DailySugarSummaryDto oldSummary = null;
-            try {
-                // Try to get existing summary without triggering auto-generation
-                ResponseMessage<List<DailySugarSummaryDto>> existingSummaries = 
-                    dailySugarSummaryService.getDailySummariesByDateRange(userId, targetDate, targetDate);
-                
-                if (existingSummaries.getCode() == 200 && 
-                    existingSummaries.getData() != null && 
-                    !existingSummaries.getData().isEmpty()) {
-                    oldSummary = existingSummaries.getData().get(0);
-                }
-            } catch (Exception e) {
-                // If failed to get existing data, oldSummary remains null
-                System.out.println("Failed to get existing summary: " + e.getMessage());
-            }
-            
-            // force recalculate the summary data
-            ResponseMessage<DailySugarSummaryDto> updateResponse = dailySugarSummaryService.updateDailySugarSummary(userId, targetDate);
-            
-            if (updateResponse.getCode() == 200) {
-                DailySugarSummaryDto newSummary = updateResponse.getData();
-                
-                // build response data
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("date", date);
-                
-                // old data (if exists)
-                if (oldSummary != null) {
-                    Map<String, Object> oldSummaryData = new HashMap<>();
-                    oldSummaryData.put("totalIntakeMg", oldSummary.getTotalIntakeMg().doubleValue());
-                    oldSummaryData.put("recordCount", oldSummary.getRecordCount());
-                    responseData.put("oldSummary", oldSummaryData);
-                } else {
-                    responseData.put("oldSummary", null);
-                }
-                
-                // new data
-                Map<String, Object> newSummaryData = new HashMap<>();
-                newSummaryData.put("totalIntakeMg", newSummary.getTotalIntakeMg().doubleValue());
-                newSummaryData.put("recordCount", newSummary.getRecordCount());
-                responseData.put("newSummary", newSummaryData);
-                
-                // recalculated time
-                responseData.put("recalculatedAt", LocalDateTime.now().format(
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
-                
-                return ResponseEntity.ok(new ResponseMessage<>(200, "Daily summary recalculated successfully", responseData));
-            } else {
-                return ResponseEntity.status(updateResponse.getCode()).body(
-                    new ResponseMessage<>(updateResponse.getCode(), updateResponse.getMessage(), null));
-            }
-            
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                new ResponseMessage<>(500, "Failed to recalculate daily sugar summary: " + e.getMessage(), null));
-        }
-    }
-
-    /**
-     * batch recalculate summaries
-     * PUT /user/{userId}/sugar-tracking/summaries/recalculate
-     */
-    @PutMapping("/{userId}/sugar-tracking/summaries/recalculate")
-    public ResponseEntity<ResponseMessage<Map<String, Object>>> batchRecalculateSummaries(
-            @PathVariable Integer userId,
-            @RequestBody Map<String, String> request) {
-        
-        try {
-            // validate the request body parameters
-            String startDateStr = request.get("startDate");
-            String endDateStr = request.get("endDate");
-            
-            if (startDateStr == null || startDateStr.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "startDate is required", null));
-            }
-            
-            if (endDateStr == null || endDateStr.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "endDate is required", null));
-            }
-            
-            // parse the date parameters
-            LocalDate startDate;
-            LocalDate endDate;
-            try {
-                startDate = LocalDate.parse(startDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-                endDate = LocalDate.parse(endDateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            } catch (DateTimeParseException e) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "Invalid date format. Use yyyy-MM-dd", null));
-            }
-            
-            // validate the date range
-            if (startDate.isAfter(endDate)) {
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "startDate cannot be after endDate", null));
-            }
-            
-            // calculate the total days, limit the range to avoid performance issues
-            long totalDays = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate) + 1;
-            if (totalDays > 366) { // maximum one year
-                return ResponseEntity.badRequest().body(
-                    new ResponseMessage<>(400, "Date range cannot exceed 366 days", null));
-            }
-            
-            // count the processed information
-            int summariesUpdated = 0;
-            int summariesCreated = 0;
-            LocalDate currentDate = startDate;
-            
-            // batch recalculate the daily summary data
-            while (!currentDate.isAfter(endDate)) {
-                try {
-                    // check if the date has existing summary data
-                    ResponseMessage<List<DailySugarSummaryDto>> existingResponse = 
-                        dailySugarSummaryService.getDailySummariesByDateRange(userId, currentDate, currentDate);
-                    
-                    boolean summaryExists = existingResponse.getCode() == 200 && 
-                                          existingResponse.getData() != null && 
-                                          !existingResponse.getData().isEmpty();
-                    
-                    // force recalculate the summary data for the date
-                    ResponseMessage<DailySugarSummaryDto> updateResponse = 
-                        dailySugarSummaryService.updateDailySugarSummary(userId, currentDate);
-                    
-                    if (updateResponse.getCode() == 200) {
-                        if (summaryExists) {
-                            summariesUpdated++;
-                        } else {
-                            summariesCreated++;
-                        }
-                    }
-                    
-                } catch (Exception e) {
-                    System.err.println("Failed to process date " + currentDate + ": " + e.getMessage());
-                    // continue to process the next date, do not terminate the entire batch operation due to a single date failure
-                }
-                
-                currentDate = currentDate.plusDays(1);
-            }
-            
-            // build the response data
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("startDate", startDateStr);
-            responseData.put("endDate", endDateStr);
-            responseData.put("totalDaysProcessed", (int)totalDays);
-            responseData.put("summariesUpdated", summariesUpdated);
-            responseData.put("summariesCreated", summariesCreated);
-            responseData.put("processedAt", LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")));
-            
-            return ResponseEntity.ok(new ResponseMessage<>(200, "Summaries recalculated successfully", responseData));
-            
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                new ResponseMessage<>(500, "Failed to batch recalculate summaries: " + e.getMessage(), null));
-        }
-    }
-
-    /**
-     * get monthly sugar calendar data
-     * GET /user/{userId}/sugar-tracking/monthly-calendar/{year}/{month}
-     */
-    @GetMapping("/{userId}/sugar-tracking/monthly-calendar/{year}/{month}")
-    public ResponseEntity<ResponseMessage<MonthlyCalendarDto>> getMonthlyCalendarData(
-            @PathVariable Integer userId,
-            @PathVariable Integer year,
-            @PathVariable Integer month) {
-        
-        try {
-            ResponseMessage<MonthlyCalendarDto> response = sugarIntakeHistoryService.getMonthlyCalendarData(userId, year, month);
-            
-            if (response.getCode() == 200) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.status(response.getCode()).body(response);
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(
-                new ResponseMessage<>(500, "Failed to get monthly calendar data: " + e.getMessage(), null));
         }
     }
 

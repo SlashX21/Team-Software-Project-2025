@@ -39,26 +39,7 @@
     </dependency>
   </dependencies>
 
-
-  <!-- <build>
-    <plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>repackage</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <mainClass>org.product.ProductApplication</mainClass>
-        </configuration> 
-      </plugin>
-    </plugins>
-  </build> -->
-
-  <build>
+<build>
     <plugins>
       <!-- enable Spring Boot plugin to support standalone startup -->
       <plugin>
