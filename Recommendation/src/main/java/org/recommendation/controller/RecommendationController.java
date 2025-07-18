@@ -4,6 +4,9 @@ import com.demo.springboot_demo.pojo.DTO.ResponseMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.recommendation.service.RecommendationService;
+import org.recommendation.pojo.BarcodeRecommendationRequest;
+import org.recommendation.pojo.ReceiptRecommendationRequest;
+import org.recommendation.pojo.PurchasedItem;
 
 import java.util.Map;
 import java.util.List;
@@ -24,7 +27,7 @@ public class RecommendationController {
      * 条码推荐接口 - 根据用户扫描的商品条码提供个性化推荐
      */
     @PostMapping("/barcode")
-    public ResponseMessage<Map<String, Object>> getBarcodeRecommendation(@RequestBody BarcodeRecommendationRequest request) {
+    public ResponseMessage<Object> getBarcodeRecommendation(@RequestBody BarcodeRecommendationRequest request) {
         return recommendationService.getBarcodeRecommendation(request.getUserId(), request.getProductBarcode());
     }
     
@@ -32,8 +35,7 @@ public class RecommendationController {
      * 小票分析推荐接口 - 分析用户购买的商品清单，提供营养分析和推荐建议
      */
     @PostMapping("/receipt")
-    public ResponseMessage<Map<String, Object>> getReceiptAnalysis(@RequestBody ReceiptRecommendationRequest request) {
-        // 转换 PurchasedItem 列表为 Map 列表
+    public ResponseMessage<Object> getReceiptAnalysis(@RequestBody ReceiptRecommendationRequest request) {
         List<Map<String, Object>> purchasedItems = request.getPurchasedItems().stream()
                 .map(item -> {
                     Map<String, Object> itemMap = new HashMap<>();
@@ -42,7 +44,6 @@ public class RecommendationController {
                     return itemMap;
                 })
                 .toList();
-        
         return recommendationService.getReceiptAnalysis(request.getUserId(), purchasedItems);
     }
     
@@ -50,7 +51,7 @@ public class RecommendationController {
      * 推荐系统健康检查接口
      */
     @GetMapping("/health")
-    public ResponseMessage<Map<String, Object>> health() {
+    public ResponseMessage<Object> health() {
         return recommendationService.checkHealth();
     }
     
@@ -58,7 +59,7 @@ public class RecommendationController {
      * 测试条码推荐接口 - 用于验证功能
      */
     @PostMapping("/barcode/test")
-    public ResponseMessage<Map<String, Object>> testBarcodeRecommendation() {
+    public ResponseMessage<Object> testBarcodeRecommendation() {
         // 创建测试响应数据
         Map<String, Object> testResponse = createTestRecommendationResponse();
         return ResponseMessage.success(testResponse);
@@ -121,77 +122,5 @@ public class RecommendationController {
         response.put("processingMetadata", metadata);
         
         return response;
-    }
-    
-    /**
-     * 条码推荐请求 DTO
-     */
-    public static class BarcodeRecommendationRequest {
-        private Integer userId;
-        private String productBarcode;
-        
-        public Integer getUserId() {
-            return userId;
-        }
-        
-        public void setUserId(Integer userId) {
-            this.userId = userId;
-        }
-        
-        public String getProductBarcode() {
-            return productBarcode;
-        }
-        
-        public void setProductBarcode(String productBarcode) {
-            this.productBarcode = productBarcode;
-        }
-    }
-    
-    /**
-     * 小票分析推荐请求 DTO
-     */
-    public static class ReceiptRecommendationRequest {
-        private Integer userId;
-        private List<PurchasedItem> purchasedItems;
-        
-        public Integer getUserId() {
-            return userId;
-        }
-        
-        public void setUserId(Integer userId) {
-            this.userId = userId;
-        }
-        
-        public List<PurchasedItem> getPurchasedItems() {
-            return purchasedItems;
-        }
-        
-        public void setPurchasedItems(List<PurchasedItem> purchasedItems) {
-            this.purchasedItems = purchasedItems;
-        }
-    }
-    
-    /**
-     * 购买商品 DTO
-     */
-    public static class PurchasedItem {
-        private String productName;
-        private Integer quantity;
-
-        public String getProductName() {
-            return productName;
-        }
-
-        public void setProductName(String productName) {
-            this.productName = productName;
-        }
-
-        public Integer getQuantity() {
-            return quantity;
-        }
-
-        public void setQuantity(Integer quantity) {
-            this.quantity = quantity;
-        }
     }
 }

@@ -25,7 +25,7 @@ public class RecommendationService {
     @Value("${recommendation.service.api-token:123456}")
     private String apiToken;
 
-    @Value("${product.service.base-url:http://localhost:8082/api}")
+    @Value("${product.service.base-url:http://localhost:8080/product}")
     private String productServiceBaseUrl;
     
     private final RestTemplate restTemplate;
@@ -47,7 +47,7 @@ public class RecommendationService {
      * @param productBarcode product barcode
      * @return recommendation response
      */
-    public ResponseMessage<Map<String, Object>> getBarcodeRecommendation(Integer userId, String productBarcode) {
+    public ResponseMessage<Object> getBarcodeRecommendation(Integer userId, String productBarcode) {
         long startTime = System.currentTimeMillis();
         RecommendationLog log = new RecommendationLog(userId, "barcode_scan");
         log.setRequestBarcode(productBarcode);
@@ -94,9 +94,13 @@ public class RecommendationService {
                 }
                 
                 // 记录LLM分析
-                if (data.containsKey("llmAnalysis")) {
+                Object llm = data.get("llmInsights");
+                if (llm == null && data.get("llmAnalysis") != null) {
+                    llm = data.get("llmAnalysis");
+                }
+                if (llm != null) {
                     try {
-                        log.setLlmAnalysis(objectMapper.writeValueAsString(data.get("llmAnalysis")));
+                        log.setLlmAnalysis(objectMapper.writeValueAsString(llm));
                     } catch (JsonProcessingException e) {
                         log.setLlmAnalysis("{}");
                     }
@@ -122,14 +126,30 @@ public class RecommendationService {
                 return ResponseMessage.success(formattedResponse);
             }
             
-            return new ResponseMessage<>(500, "推荐服务返回数据格式错误", null);
+            return new ResponseMessage<Object>(500, "推荐服务返回数据格式错误", Map.of(
+                "code", "RECOMMENDATION_ERROR",
+                "message", "推荐服务返回数据格式错误",
+                "details", Map.of(
+                    "userId", userId,
+                    "productBarcode", productBarcode,
+                    "timestamp", LocalDateTime.now().toString()
+                )
+            ));
             
         } catch (Exception e) {
             log.setProcessingTimeMs((int) (System.currentTimeMillis() - startTime));
             log.setLlmAnalysis("Error: " + e.getMessage());
             recommendationLogRepository.save(log);
             
-            return new ResponseMessage<>(500, "调用条码推荐服务失败: " + e.getMessage(), null);
+            return new ResponseMessage<Object>(500, "调用条码推荐服务失败: " + e.getMessage(), Map.of(
+                "code", "RECOMMENDATION_ERROR",
+                "message", e.getMessage(),
+                "details", Map.of(
+                    "userId", userId,
+                    "productBarcode", productBarcode,
+                    "timestamp", LocalDateTime.now().toString()
+                )
+            ));
         }
     }
     
@@ -149,7 +169,12 @@ public class RecommendationService {
         responseData.put("scanType", data.getOrDefault("scanType", "barcode_scan"));
         responseData.put("userProfileSummary", data.getOrDefault("userProfileSummary", new HashMap<>()));
         responseData.put("recommendations", data.getOrDefault("recommendations", List.of()));
-        responseData.put("llmAnalysis", data.getOrDefault("llmAnalysis", new HashMap<>()));
+        // Use llmInsights instead of llmAnalysis
+        Object llm = data.get("llmInsights");
+        if (llm == null && data.get("llmAnalysis") != null) {
+            llm = data.get("llmAnalysis");
+        }
+        responseData.put("llmInsights", llm != null ? llm : new HashMap<>());
         responseData.put("processingMetadata", data.getOrDefault("processingMetadata", new HashMap<>()));
         
         response.put("data", responseData);
@@ -161,7 +186,7 @@ public class RecommendationService {
      * 获取小票分析推荐
      * This method now takes product names, looks up their barcodes, and then sends the barcodes to the Python service.
      */
-    public ResponseMessage<Map<String, Object>> getReceiptAnalysis(Integer userId, List<Map<String, Object>> purchasedItems) {
+    public ResponseMessage<Object> getReceiptAnalysis(Integer userId, List<Map<String, Object>> purchasedItems) {
         long startTime = System.currentTimeMillis();
         RecommendationLog log = new RecommendationLog(userId, "receipt_scan");
 
@@ -179,12 +204,13 @@ public class RecommendationService {
                 // Call Product service to get barcode
                 // Note: This assumes the product search API returns a list and we take the first result.
                 // Proper error handling for not found or multiple results should be enhanced.
-                String searchUrl = productServiceBaseUrl + "/product/search?name=" + productName;
+                String searchUrl = productServiceBaseUrl + "/search?name=" + productName;
                 ResponseEntity<Map> searchResponse = restTemplate.getForEntity(searchUrl, Map.class);
 
                 if (searchResponse.getStatusCode() == HttpStatus.OK && searchResponse.getBody() != null) {
                     Map<String, Object> searchBody = searchResponse.getBody();
-                    List<Map<String, Object>> products = (List<Map<String, Object>>) searchBody.get("products");
+                    Map<String, Object> data = (Map<String, Object>) searchBody.get("data");
+                    List<Map<String, Object>> products = (List<Map<String, Object>>) data.get("products");
                     if (products != null && !products.isEmpty()) {
                         String barcode = (String) products.get(0).get("barcode");
                         Map<String, Object> newItem = new HashMap<>();
@@ -199,7 +225,14 @@ public class RecommendationService {
             }
 
             if (itemsWithBarcodes.isEmpty()) {
-                return new ResponseMessage<>(404, "无法从小票商品中识别出任何有效产品", null);
+                return new ResponseMessage<Object>(404, "无法从小票商品中识别出任何有效产品", Map.of(
+                    "code", "RECOMMENDATION_ERROR",
+                    "message", "No valid products found in receipt",
+                    "details", Map.of(
+                        "userId", userId,
+                        "timestamp", LocalDateTime.now().toString()
+                    )
+                ));
             }
 
             // Step 2: Call Python recommendation service with barcodes
@@ -233,23 +266,46 @@ public class RecommendationService {
                     log.setRecommendedProducts("{}");
                 }
                 recommendationLogRepository.save(log);
+                // Ensure llmInsights field in response
+                if (responseBody.containsKey("data")) {
+                    Map<String, Object> data = (Map<String, Object>) responseBody.get("data");
+                    Object llm = data.get("llmInsights");
+                    if (llm == null && data.get("llmAnalysis") != null) {
+                        data.put("llmInsights", data.get("llmAnalysis"));
+                        data.remove("llmAnalysis");
+                    }
+                }
                 return ResponseMessage.success(responseBody);
             }
 
-            return new ResponseMessage<>(500, "推荐服务返回数据格式错误", null);
+            return new ResponseMessage<Object>(500, "推荐服务返回数据格式错误", Map.of(
+                "code", "RECOMMENDATION_ERROR",
+                "message", "推荐服务返回数据格式错误",
+                "details", Map.of(
+                    "userId", userId,
+                    "timestamp", LocalDateTime.now().toString()
+                )
+            ));
 
         } catch (Exception e) {
             log.setProcessingTimeMs((int) (System.currentTimeMillis() - startTime));
             log.setLlmAnalysis("Error: " + e.getMessage());
             recommendationLogRepository.save(log);
-            return new ResponseMessage<>(500, "调用小票分析服务失败: " + e.getMessage(), null);
+            return new ResponseMessage<Object>(500, "调用小票分析服务失败: " + e.getMessage(),Map.of(
+                "code", "RECOMMENDATION_ERROR",
+                "message", e.getMessage(),
+                "details", Map.of(
+                    "userId", userId,
+                    "timestamp", LocalDateTime.now().toString()
+                )
+            ));
         }
     }
     
     /**
      * 健康检查
      */
-    public ResponseMessage<Map<String, Object>> checkHealth() {
+    public ResponseMessage<Object> checkHealth() {
         try {
             ResponseEntity<Map> response = restTemplate.getForEntity(
                 recommendationServiceBaseUrl + "/health", 
@@ -259,7 +315,7 @@ public class RecommendationService {
             return ResponseMessage.success((Map<String, Object>) response.getBody());
             
         } catch (Exception e) {
-            return new ResponseMessage<>(503, "推荐服务不可用: " + e.getMessage(), null);
+            return new ResponseMessage<Object>(503, "推荐服务不可用: " + e.getMessage(), null);
         }
     }
 } 
