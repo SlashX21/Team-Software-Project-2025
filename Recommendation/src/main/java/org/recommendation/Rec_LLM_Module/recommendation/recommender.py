@@ -1568,20 +1568,20 @@ class RecommendationEngine:
                 )
                 
                 if has_meaningful_data:
-                # Final analysis structure matching frontend expectations
-                final_analysis = {
-                    "summary": parsed_analysis.get("summary", parsed_analysis.get("core_insight", "No summary available.")),
+                    # Final analysis structure matching frontend expectations
+                    final_analysis = {
+                        "summary": parsed_analysis.get("summary", parsed_analysis.get("core_insight", "No summary available.")),
                         "detailedAnalysis": parsed_analysis.get("detailedAnalysis") or (", ".join(parsed_analysis.get("key_findings", [])) if parsed_analysis.get("key_findings") else "No detailed analysis available."),
                         "actionSuggestions": parsed_analysis.get("actionSuggestions") or parsed_analysis.get("improvement_suggestions", []),
-                    "tokens_used": llm_response.usage.get("total_tokens", 0) if llm_response.usage else 0,
-                    "processing_time_ms": llm_response.processing_time_ms,
-                    "model_used": llm_response.model,
-                    "confidence_score": 0.9, # High confidence
+                        "tokens_used": llm_response.usage.get("total_tokens", 0) if llm_response.usage else 0,
+                        "processing_time_ms": llm_response.processing_time_ms,
+                        "model_used": llm_response.model,
+                        "confidence_score": 0.9, # High confidence
                         "available_recommendations_count": len(top_recommendations),
                         "parsing_successful": True
-                }
-                
-                return final_analysis
+                    }
+                    
+                    return final_analysis
                 else:
                     logger.warning(f"LLM响应解析未提取到有效数据，使用fallback分析")
                     return self._create_fallback_analysis(original_product, top_recommendations, nutrition_goal)
@@ -1948,9 +1948,9 @@ Requirements:
 Please provide only the reasoning text, no extra formatting."""
 
             # 调用LLM生成个性化推荐理由
-                llm_response = await self.llm.generate_completion(
+            llm_response = await self.llm.generate_completion(
                 prompt=detailed_reasoning_prompt,
-                    config_override={
+                config_override={
                     "max_tokens": 120,
                     "temperature": 0.8  # 增加创造性以产生差异化内容
                     }
@@ -1960,7 +1960,7 @@ Please provide only the reasoning text, no extra formatting."""
                 detailed_reason = llm_response.content.strip()
                 logger.info(f"LLM生成详细推荐理由成功: {product_name[:30]}... -> {detailed_reason[:50]}...")
                 return detailed_reason
-                    else:
+            else:
                 logger.warning(f"LLM推荐理由生成失败，使用增强回退逻辑: {llm_response.error if hasattr(llm_response, 'error') else 'Unknown error'}")
                 # 使用真正的个性化回退逻辑
                 return self._generate_personalized_fallback_reasoning(

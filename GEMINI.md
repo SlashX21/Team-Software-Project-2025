@@ -1,5 +1,55 @@
 # Gemini AI Workspace Configuration
 
+## Development Mandates
+
+### 1. Single Source of Truth
+- **Primary Specification**: The root file `推荐系统完整流程规范.md` is the **sole and absolute source of truth** for all system architecture, API contracts, data flows, and database schemas.
+- **Mandatory Adherence**: All development, verification, and modifications must strictly adhere to this document. Any deviation must be discussed and, if approved, immediately updated in this specification.
+
+### 2. Code Modification Boundaries
+- **Java Backend (Frozen)**: **STRICTLY FORBIDDEN** to modify any Java code within the `Recommendation` module (`/Recommendation/src/main/java/org/recommendation/`). The Java backend is considered stable and complete.
+- **Python Module (Modifiable)**: **ALLOWED** to modify the Python code within the `Rec_LLM_Module` (`/Recommendation/src/main/java/org/recommendation/Rec_LLM_Module/`) to improve algorithms, enhance data processing, or fix bugs, provided the changes align with the primary specification.
+
+### 3. Real-World Operations Only
+- **NO MOCKING**: All forms of data or service mocking are **strictly forbidden**. Development and testing must use real database connections and live external API calls (e.g., OpenAI).
+- **NO LOCAL FALLBACKS**: All forms of local fallback or degradation strategies (e.g., providing a default response when an LLM call fails) are **strictly forbidden**. The system must be robust enough to handle real-world service failures without resorting to simulated or degraded functionality.
+
+## State and Task Management Protocol
+
+This protocol ensures seamless context transfer, progress tracking, and clarity between sessions and agents.
+
+### **Interaction Lifecycle Mandate (CRITICAL)**
+- **SESSION START**: The **FIRST ACTION** in any new interaction MUST be to read the content of `session-handoff.md` and `todo.md` to gain full and current project context.
+- **SESSION END**: The **LAST ACTION** of any interaction MUST be to update `session-handoff.md` and `todo.md` to reflect all work completed and the current project state.
+- **STRICT COMPLIANCE**: This is not a suggestion, but a mandatory operational step to ensure continuity.
+
+### 1. Proactive Design Clarification
+- **Mandate**: When faced with ambiguity or underspecified requirements regarding feature design, architecture, or implementation logic, the agent **must** proactively ask the user systematic and guiding questions.
+- **Goal**: To elicit clear, actionable requirements *before* proceeding with implementation, preventing rework and ensuring alignment with the user's vision.
+
+### 2. `session-handoff.md`: The State Log
+- **Purpose**: To document the **current state** of the project and log **significant, consolidated modifications** made during a session. It is a high-level state summary, not a verbose commit log.
+- **Update Cadence**: Must be updated at the end of every session/interaction.
+- **Update Method**:
+    - **Read First**: Always read the existing file before writing.
+    - **Consolidate, Don't Just Append**: Review previous entries. If a new change modifies or supersedes an old one, **update the existing entry**. For example, if you first add a function and later refactor it, the final entry should only describe the refactored state.
+    - **Focus on "What" and "Why"**: Log what the state of a feature is now and why the key changes were made.
+    - **Brevity and Clarity**: Keep the log concise and easy to understand.
+
+### 3. `todo.md`: The Action Plan
+- **Purpose**: To maintain a clear, simple, and precise checklist of project tasks. It serves as the primary progress tracking tool.
+- **Update Cadence**: Must be updated at the end of every session/interaction, in sync with `session-handoff.md`.
+- **Format**: Use markdown checkboxes to track status.
+    - `[ ]` - To Do
+    - `[x]` - Done
+    - `[/]` - In Progress (Optional)
+- **Content**: Tasks should be broken down into actionable and verifiable steps.
+
+### 4. Synergy
+- `session-handoff.md` describes the **past and present** (what was done, what is the current state).
+- `todo.md` describes the **future** (what needs to be done next).
+- Both files must be read at the start of a session to gain full context.
+
 ## MVP Development Philosophy
 
 ### Core Principles
