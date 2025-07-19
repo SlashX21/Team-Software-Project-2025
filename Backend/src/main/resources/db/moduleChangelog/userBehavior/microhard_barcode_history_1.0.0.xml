@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create scan_history table -->
+    <changeSet id="barcode-history-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="barcode_history"/>
+            </not>
+        </preConditions>
+        <createTable tableName="barcode_history">
+            <column name="barcode_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="barcode" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scan_time" type="${type.datetime}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recommendation_id" type="${type.string}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="recommended_products" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="llm_analysis" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${type.datetime}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+        baseTableName="barcode_history"
+        baseColumnNames="user_id"
+        referencedTableName="user"
+        referencedColumnNames="user_id"
+        constraintName="fk_barcode_history_user"
+        onDelete="CASCADE"/>
+
+        <!-- Temporarily disabled FK constraint to product table as it's in a different microservice -->
+        <addForeignKeyConstraint
+        baseTableName="barcode_history"
+        baseColumnNames="barcode"
+        referencedTableName="product"
+        referencedColumnNames="barcode"
+        constraintName="fk_barcode_history_product"
+        onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

@@ -1,9 +1,10 @@
 package org.user.enums;
 
 public enum GoalLevel {
-    STRICT("strict"),
-    MODERATE("moderate"),
-    RELAXED("relaxed");
+    STRICT("STRICT"),
+    MODERATE("MODERATE"),
+    RELAXED("RELAXED"),
+    CUSTOM("CUSTOM");
 
     private final String description;
 

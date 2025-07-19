@@ -12,4 +12,6 @@
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_purchase_record_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_purchase_item_1.0.0.xml"></include>
     <include file="classpath:db/moduleChangelog/userBehavior/microhard_recommendation_log_1.0.0.xml"></include>
+    <include file="classpath:db/moduleChangelog/userBehavior/microhard_barcode_history_1.0.0.xml"></include>
+    <include file="classpath:db/moduleChangelog/userBehavior/microhard_receipt_history_1.0.0.xml"></include>
 </databaseChangeLog>
