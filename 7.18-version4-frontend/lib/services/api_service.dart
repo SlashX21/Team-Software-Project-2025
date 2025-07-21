@@ -1008,8 +1008,8 @@ class ApiService {
       };
       if (month != null) queryParams['month'] = month;
       
-      final uri = Uri.parse('$baseUrl/api/scan-history/user/$userId')
-          .replace(queryParameters: queryParams);
+      final uri = Uri.parse('$baseUrl/api/barcode-history')
+          .replace(queryParameters: {...queryParams, 'userId': userId.toString()});
       final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
       
       print('🌐 getUserScanHistory: Making request to URL: $uri');
@@ -1039,7 +1039,7 @@ class ApiService {
   ) async {
     try {
       final queryParams = {'userId': userId.toString()};
-      final uri = Uri.parse('$baseUrl/api/scan-history/$scanId/product-details')
+      final uri = Uri.parse('$baseUrl/api/barcode-history/$scanId/details')
           .replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: {'Content-Type': 'application/json'});
       
@@ -1050,6 +1050,14 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         print('✅ getProductDetailsFromScanHistory: Successfully parsed JSON response');
+        print('🔍 Raw data structure: ${data.toString()}');
+        if (data['data'] != null) {
+          print('🔍 data[\'data\']: ${data['data'].toString()}');
+          if (data['data']['aiAnalysis'] != null) {
+            print('🔍 aiAnalysis field: ${data['data']['aiAnalysis'].toString()}');
+            print('🔍 aiAnalysis type: ${data['data']['aiAnalysis'].runtimeType}');
+          }
+        }
         return data['data'];
       } else {
         print('❌ getProductDetailsFromScanHistory: Non-200 status code: ${response.statusCode}');

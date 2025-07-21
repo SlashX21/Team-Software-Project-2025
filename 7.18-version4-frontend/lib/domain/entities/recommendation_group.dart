@@ -12,10 +12,10 @@ class RecommendationGroup {
 
   factory RecommendationGroup.fromJson(Map<String, dynamic> json) {
     return RecommendationGroup(
-      originalItem: PurchasedItem.fromJson(json['originalItem'] as Map<String, dynamic>),
-      alternatives: (json['alternatives'] as List<dynamic>)
-          .map((item) => AlternativeProduct.fromJson(item as Map<String, dynamic>))
-          .toList(),
+      originalItem: PurchasedItem.fromJson(json['originalItem'] as Map<String, dynamic>? ?? {}),
+      alternatives: (json['alternatives'] as List<dynamic>?)
+          ?.map((item) => AlternativeProduct.fromJson(item as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
 

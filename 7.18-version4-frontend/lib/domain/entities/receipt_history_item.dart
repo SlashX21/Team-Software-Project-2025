@@ -14,12 +14,15 @@ class ReceiptHistoryItem {
   });
 
   factory ReceiptHistoryItem.fromJson(Map<String, dynamic> json) {
+    print('🔍 ReceiptHistoryItem.fromJson received: $json');
+    print('🔍 Backend displayTitle: "${json['displayTitle']}"');
+    
     return ReceiptHistoryItem(
-      receiptId: json['receiptId'] as int,
-      scanTime: DateTime.parse(json['scanTime'] as String),
-      displayTitle: json['displayTitle'] as String,
-      itemCount: json['itemCount'] as int,
-      hasRecommendations: json['hasRecommendations'] as bool,
+      receiptId: json['receiptId'] as int? ?? 0,
+      scanTime: DateTime.parse(json['scanTime'] as String? ?? DateTime.now().toIso8601String()),
+      displayTitle: json['displayTitle']?.toString() ?? 'Receipt',
+      itemCount: json['itemCount'] as int? ?? 0,
+      hasRecommendations: json['hasRecommendations'] as bool? ?? false,
     );
   }
 

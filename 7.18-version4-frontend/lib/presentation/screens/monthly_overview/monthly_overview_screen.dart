@@ -5,6 +5,7 @@ import '../../../domain/entities/monthly_overview.dart';
 import '../../../domain/entities/history_response.dart' as history_response;
 import '../../../domain/entities/receipt_history_item.dart';
 import '../../../domain/entities/paged_response.dart';
+import '../../../domain/entities/scan_history_response.dart';
 import '../../../services/api.dart';
 import '../../../services/user_service.dart';
 import '../../../services/receipt_history_service.dart';
@@ -122,25 +123,22 @@ class _MonthlyOverviewScreenState extends State<MonthlyOverviewScreen> {
       // Wait for both API calls to complete
       final results = await Future.wait([scanHistoryFuture, receiptHistoryFuture]);
       
-      final scanResponse = results[0] as Map<String, dynamic>?;
+      final scanResponse = results[0] as ScanHistoryResponse?;
       final receiptResponse = results[1] as PagedResponse<ReceiptHistoryItem>?;
 
       // Convert scan history response to HistoryItem format
       List<history_response.HistoryItem> scanHistoryItems = [];
-      if (scanResponse != null && scanResponse['data'] != null) {
-        final scanData = scanResponse['data'];
-        if (scanData['items'] != null) {
-          scanHistoryItems = (scanData['items'] as List).map((item) {
-            return history_response.HistoryItem(
-              id: (item['scanId'] ?? 0).toString(),
-              productName: item['productName'] ?? 'Unknown Product',
-              scanType: 'scan',
-              createdAt: DateTime.tryParse(item['scannedAt'] ?? '') ?? DateTime.now(),
-              summary: {},
-              recommendationCount: 0,
-            );
-          }).toList();
-        }
+      if (scanResponse != null && scanResponse.items.isNotEmpty) {
+        scanHistoryItems = scanResponse.items.map((item) {
+          return history_response.HistoryItem(
+            id: item.scanId.toString(),
+            productName: item.productName,
+            scanType: 'scan',
+            createdAt: item.scannedAt,
+            summary: {},
+            recommendationCount: 0,
+          );
+        }).toList();
       }
 
       // Convert receipt history response to HistoryItem format

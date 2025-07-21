@@ -508,7 +508,7 @@ Future<int> getMonthlyScanCount({
   required String month,
 }) async {
   try {
-    final uri = Uri.parse('${ApiConfig.springBootBaseUrl}/api/scan-history/monthly-count')
+    final uri = Uri.parse('${ApiConfig.springBootBaseUrl}/api/barcode-history/monthly-count')
         .replace(queryParameters: {
       'userId': userId.toString(),
       'month': month,
@@ -521,7 +521,7 @@ Future<int> getMonthlyScanCount({
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
-      if (json['success'] == true && json['data'] != null) {
+      if (json['code'] == 200 && json['data'] != null) {
         return json['data']['count'] as int;
       }
     }
@@ -554,7 +554,7 @@ Future<int> getMonthlyReceiptCount({
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> json = jsonDecode(response.body);
-      if (json['success'] == true && json['data'] != null) {
+      if (json['code'] == 200 && json['data'] != null) {
         return json['data']['count'] as int;
       }
     }

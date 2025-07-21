@@ -42,8 +42,19 @@ class ReceiptHistoryService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
+        print('🔍 Receipt history list API response: ${response.body}');
+        final responseData = jsonData['data'] as Map<String, dynamic>;  // Extract the nested data
+        print('🔍 Receipt history responseData: $responseData');
+        if (responseData['data'] != null) {
+          final items = responseData['data'] as List;
+          print('🔍 Receipt history items count: ${items.length}');
+          for (int i = 0; i < items.length; i++) {
+            final item = items[i];
+            print('🔍 Receipt item $i: receiptId=${item['receiptId']}, displayTitle="${item['displayTitle']}"');
+          }
+        }
         return PagedResponse.fromJson(
-          jsonData,
+          responseData,
           (json) => ReceiptHistoryItem.fromJson(json),
         );
       } else {
@@ -66,7 +77,7 @@ class ReceiptHistoryService {
   Future<ReceiptDetail> getReceiptDetails(int receiptId) async {
     try {
       final uri = Uri.parse('$baseUrl/api/receipt-history/$receiptId/details');
-
+      
       final response = await http.get(
         uri,
         headers: {
@@ -77,7 +88,37 @@ class ReceiptHistoryService {
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
-        return ReceiptDetail.fromJson(jsonData);
+        print('🔍 Receipt details API response: ${response.body}');
+        print('🔍 Receipt details parsed JSON: $jsonData');
+        
+        // Check if this follows the same nested structure as other APIs
+        if (jsonData['code'] == 200 && jsonData['data'] != null) {
+          final outerData = jsonData['data'] as Map<String, dynamic>;
+          print('🔍 Receipt outerData: $outerData');
+          
+          // Check for double nesting (data.data structure)
+          if (outerData['data'] != null) {
+            final innerData = outerData['data'] as Map<String, dynamic>;
+            print('🔍 Receipt innerData: $innerData');
+            if (innerData['llmSummary'] != null) {
+              print('🔍 llmSummary field: ${innerData['llmSummary']}');
+              print('🔍 llmSummary type: ${innerData['llmSummary'].runtimeType}');
+            }
+            return ReceiptDetail.fromJson(innerData);
+          } else {
+            if (outerData['llmSummary'] != null) {
+              print('🔍 llmSummary field: ${outerData['llmSummary']}');
+              print('🔍 llmSummary type: ${outerData['llmSummary'].runtimeType}');
+            }
+            return ReceiptDetail.fromJson(outerData);
+          }
+        } else {
+          if (jsonData['llmSummary'] != null) {
+            print('🔍 llmSummary field: ${jsonData['llmSummary']}');
+            print('🔍 llmSummary type: ${jsonData['llmSummary'].runtimeType}');
+          }
+          return ReceiptDetail.fromJson(jsonData);
+        }
       } else if (response.statusCode == 404) {
         throw ReceiptNotFoundException('Receipt with ID $receiptId not found');
       } else {

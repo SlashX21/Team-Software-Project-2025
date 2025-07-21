@@ -9,8 +9,8 @@ class PurchasedItem {
 
   factory PurchasedItem.fromJson(Map<String, dynamic> json) {
     return PurchasedItem(
-      productName: json['productName'] as String,
-      quantity: json['quantity'] as int,
+      productName: json['productName']?.toString() ?? 'Unknown Product',
+      quantity: json['quantity'] as int? ?? 1,
     );
   }
 

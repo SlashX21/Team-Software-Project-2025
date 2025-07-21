@@ -13,9 +13,9 @@ class ScanHistoryItem {
   
   factory ScanHistoryItem.fromJson(Map<String, dynamic> json) {
     return ScanHistoryItem(
-      scanId: json['scanId'] as int,
+      scanId: json['barcodeId'] as int,  // Backend returns 'barcodeId' not 'scanId'
       productName: json['productName'] as String,
-      brand: json['brand'] as String?,
+      brand: json['brand'] as String?,   // Backend may not return brand, will be null
       scannedAt: DateTime.parse(json['scannedAt'] as String),
     );
   }

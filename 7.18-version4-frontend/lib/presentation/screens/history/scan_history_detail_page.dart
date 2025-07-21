@@ -77,7 +77,7 @@ class _ScanHistoryDetailPageState extends State<ScanHistoryDetailPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Product Details', style: AppStyles.h2.copyWith(color: AppColors.white)),
+        title: Text('Details', style: AppStyles.h2.copyWith(color: AppColors.white)),
         backgroundColor: AppColors.primary,
         elevation: 0,
         leading: BackButton(color: AppColors.white),
@@ -300,6 +300,7 @@ class _ScanHistoryDetailPageState extends State<ScanHistoryDetailPage> {
   Widget _buildAIAnalysisSection() {
     final aiAnalysis = _productDetail!.aiAnalysis;
     
+    
     return Container(
       padding: EdgeInsets.all(16),
       margin: EdgeInsets.symmetric(vertical: 8),
@@ -332,36 +333,52 @@ class _ScanHistoryDetailPageState extends State<ScanHistoryDetailPage> {
             ],
           ),
           SizedBox(height: 16),
-          if (aiAnalysis.summary.isNotEmpty) ...[
-            Text(
-              'Summary:',
-              style: AppStyles.bodyBold,
-            ),
-            SizedBox(height: 8),
+          Text(
+            'Summary:',
+            style: AppStyles.bodyBold,
+          ),
+          SizedBox(height: 8),
+          if (aiAnalysis.summary.trim().isNotEmpty) ...[
             Text(
               aiAnalysis.summary,
               style: AppStyles.bodyRegular.copyWith(height: 1.5),
             ),
-            SizedBox(height: 12),
-          ],
-          if (aiAnalysis.detailedAnalysis.isNotEmpty) ...[
+          ] else ...[
             Text(
-              'Detailed Analysis:',
-              style: AppStyles.bodyBold,
+              'No summary available',
+              style: AppStyles.bodyRegular.copyWith(
+                color: AppColors.textLight,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-            SizedBox(height: 8),
+          ],
+          SizedBox(height: 12),
+          Text(
+            'Detailed Analysis:',
+            style: AppStyles.bodyBold,
+          ),
+          SizedBox(height: 8),
+          if (aiAnalysis.detailedAnalysis.trim().isNotEmpty) ...[
             Text(
               aiAnalysis.detailedAnalysis,
               style: AppStyles.bodyRegular.copyWith(height: 1.5),
             ),
-            SizedBox(height: 12),
-          ],
-          if (aiAnalysis.actionSuggestions.isNotEmpty) ...[
+          ] else ...[
             Text(
-              'Action Suggestions:',
-              style: AppStyles.bodyBold,
+              'No detailed analysis available',
+              style: AppStyles.bodyRegular.copyWith(
+                color: AppColors.textLight,
+                fontStyle: FontStyle.italic,
+              ),
             ),
-            SizedBox(height: 8),
+          ],
+          SizedBox(height: 12),
+          Text(
+            'Action Suggestions:',
+            style: AppStyles.bodyBold,
+          ),
+          SizedBox(height: 8),
+          if (aiAnalysis.actionSuggestions.isNotEmpty) ...[
             ...aiAnalysis.actionSuggestions.map((suggestion) => Padding(
               padding: EdgeInsets.only(bottom: 4),
               child: Row(
@@ -374,6 +391,14 @@ class _ScanHistoryDetailPageState extends State<ScanHistoryDetailPage> {
                 ],
               ),
             )).toList(),
+          ] else ...[
+            Text(
+              'No action suggestions available',
+              style: AppStyles.bodyRegular.copyWith(
+                color: AppColors.textLight,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ],
         ],
       ),
@@ -466,12 +491,22 @@ class _ScanHistoryDetailPageState extends State<ScanHistoryDetailPage> {
                     style: AppStyles.bodyBold,
                   ),
                   SizedBox(height: 4),
-                  Text(
-                    '• Protein: ${recommendation.nutritionImprovement.proteinIncrease}\n'
-                    '• Sugar: ${recommendation.nutritionImprovement.sugarReduction}\n'
-                    '• Calories: ${recommendation.nutritionImprovement.calorieChange}',
-                    style: AppStyles.bodyRegular.copyWith(height: 1.5),
-                  ),
+                  if (recommendation.nutritionImprovement != null) ...[
+                    Text(
+                      '• Protein: ${recommendation.nutritionImprovement!.proteinIncrease}\n'
+                      '• Sugar: ${recommendation.nutritionImprovement!.sugarReduction}\n'
+                      '• Calories: ${recommendation.nutritionImprovement!.calorieChange}',
+                      style: AppStyles.bodyRegular.copyWith(height: 1.5),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Nutrition improvement data not available',
+                      style: AppStyles.bodyRegular.copyWith(
+                        color: AppColors.textLight,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                   SizedBox(height: 8),
                   Text(
                     'Reason: ${recommendation.reasoning}',
