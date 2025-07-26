@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create allergen table -->
+    <changeSet id="sugar-goals-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="sugar_goals"/>
+            </not>
+        </preConditions>
+        <createTable tableName="sugar_goals">
+            <column name="id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="daily_goal_mg" type="${type.decimal}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="goal_level" type="${type.string}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="updated_at" type="${type.timestamp}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+        baseTableName="sugar_goals"
+        baseColumnNames="user_id"
+        referencedTableName="user"
+        referencedColumnNames="user_id"
+        constraintName="fk_sugar_goals_user"
+        onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

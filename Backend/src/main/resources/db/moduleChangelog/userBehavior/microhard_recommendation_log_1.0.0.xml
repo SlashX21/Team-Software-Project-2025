@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create recommendation_log table -->
+    <changeSet id="recommendation-log-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="recommendation_log"/>
+            </not>
+        </preConditions>
+        <createTable tableName="recommendation_log">
+            <column name="log_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="request_barcode" type="${type.string}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="request_type" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recommended_products" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="algorithm_version" type="${type.string}" defaultValue="v1.0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="llm_prompt" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="llm_response" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="llm_analysis" type="${type.longtext}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="processing_time_ms" type="${type.int}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="total_candidates" type="${type.int}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="filtered_candidates" type="${type.int}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <!-- Add foreign key constraint to user table -->
+        <addForeignKeyConstraint
+            baseTableName="recommendation_log"
+            baseColumnNames="user_id"
+            referencedTableName="user"
+            referencedColumnNames="user_id"
+            constraintName="fk_recommendation_log_user"
+            onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog> 

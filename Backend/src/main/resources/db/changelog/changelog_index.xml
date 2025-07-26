@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+     <!-- Add global property file -->
+     <!-- This global property file defined all rules of all sub-modules must obey, e.g., type exchange -->
+    <include file="classpath:db/changelog/changelog_global_property.xml" relativeToChangelogFile="false"/>
+
+     <!-- invoke changeset files of all sub-modules, avoid duplication -->
+    <!-- 注意：严格按照外键依赖顺序执行，避免"Failed to open the referenced table"错误 -->
+    
+    <!-- 第一层：基础表（无外键依赖） -->
+    <include file="classpath:db/moduleChangelog/user_index.xml" relativeToChangelogFile="false"/>
+    <include file="classpath:db/moduleChangelog/product_index.xml" relativeToChangelogFile="false"/>
+    
+    <!-- 第二层：一级依赖表（引用基础表） -->
+    <include file="classpath:db/moduleChangelog/allergen_index.xml" relativeToChangelogFile="false"/>
+    <include file="classpath:db/moduleChangelog/healthManagement_index.xml" relativeToChangelogFile="false"/>
+    
+    <!-- 第三层：二级依赖表（引用一级依赖表，需要purchase_record先创建） -->
+    <include file="classpath:db/moduleChangelog/userBehavior_index.xml" relativeToChangelogFile="false"/>
+</databaseChangeLog>

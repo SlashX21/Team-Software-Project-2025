@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create product table -->
+    <changeSet id="product-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="product"/>
+            </not>
+        </preConditions>
+        <createTable tableName="product">
+            <column name="barcode" type="${type.string}">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="name" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="brand" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="ingredients" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="allergens" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="energy_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="energy_kcal_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="fat_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="saturated_fat_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="carbohydrates_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="sugars_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="proteins_100g" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="serving_size" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="category" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
