@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose logs:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(cd:*)",
+      "Bash(docker compose:*)",
+      "Bash(python:*)",
+      "Bash(export OPENAI_API_KEY=\"sk-proj-placeholder\")",
+      "Bash(export ENVIRONMENT=\"java_integration\")",
+      "Bash(cd:*)"
+    ],
+    "deny": []
+  }
+}

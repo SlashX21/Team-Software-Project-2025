@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create allergen table -->
+    <changeSet id="allergen-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="allergen"/>
+            </not>
+        </preConditions>
+        <createTable tableName="allergen">
+            <column name="allergen_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="name" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="is_common" type="${type.boolean}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="description" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="user-allergen-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="user_allergen"/>
+            </not>
+        </preConditions>
+        <createTable tableName="user_allergen">
+            <column name="user_allergen_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="allergen_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="severity_level" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="confirmed" type="${type.boolean}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="notes" type="${type.longtext}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+    <addForeignKeyConstraint
+        baseTableName="user_allergen"
+        baseColumnNames="user_id"
+        referencedTableName="user"
+        referencedColumnNames="user_id"
+        constraintName="fk_user_allergen_user"
+        onDelete="CASCADE"/>
+
+    <addForeignKeyConstraint
+        baseTableName="user_allergen"
+        baseColumnNames="allergen_id"
+        referencedTableName="allergen"
+        referencedColumnNames="allergen_id"
+        constraintName="fk_user_allergen_allergen"
+        onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="product-allergen-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="product_allergen"/>
+            </not>
+        </preConditions>
+        <createTable tableName="product_allergen">
+            <column name="product_allergen_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="barcode" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="allergen_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="presence_type" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="confidence_score" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+        baseTableName="product_allergen"
+        baseColumnNames="barcode"
+        referencedTableName="product"
+        referencedColumnNames="barcode"
+        constraintName="fk_product_allergen_product"
+        onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint
+        baseTableName="product_allergen"
+        baseColumnNames="allergen_id"
+        referencedTableName="allergen"
+        referencedColumnNames="allergen_id"
+        constraintName="fk_product_allergen_allergen"
+        onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

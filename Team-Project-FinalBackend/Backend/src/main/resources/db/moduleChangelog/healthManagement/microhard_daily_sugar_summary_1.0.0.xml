@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create daily_sugar_summary table -->
+    <changeSet id="daily-sugar-summary-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="daily_sugar_summary"/>
+            </not>
+        </preConditions>
+        <createTable tableName="daily_sugar_summary">
+            <column name="id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="user_id" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_intake_mg" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="daily_goal_mg" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="progress_percentage" type="DECIMAL(5,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="ENUM('GOOD','WARNING','OVER_LIMIT')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="record_count" type="${type.int}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="${type.timestamp}" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- add unique constraint for user_id and date -->
+    <changeSet id="daily-sugar-summary-add-unique-constraint-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+        </preConditions>
+        <addUniqueConstraint
+                tableName="daily_sugar_summary"
+                columnNames="user_id, date"
+                constraintName="unique_user_date"/>
+    </changeSet>
+
+    <!-- add index for user_id and month query optimization -->
+    <changeSet id="daily-sugar-summary-add-index-user-month-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+            <not>
+                <indexExists tableName="daily_sugar_summary" indexName="idx_user_month"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="daily_sugar_summary" indexName="idx_user_month">
+            <column name="user_id"/>
+            <column name="date"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- add foreign key constraint for user_id -->
+    <changeSet id="daily-sugar-summary-add-foreign-key-user-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+            <tableExists tableName="user"/>
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_daily_sugar_summary_user_id"/>
+            </not>
+        </preConditions>
+        <addForeignKeyConstraint
+                baseTableName="daily_sugar_summary"
+                baseColumnNames="user_id"
+                constraintName="fk_daily_sugar_summary_user_id"
+                referencedTableName="user"
+                referencedColumnNames="user_id"
+                onDelete="CASCADE"/>
+    </changeSet>
+
+    <!-- add check constraint for total_intake_mg -->
+    <!-- <changeSet id="daily-sugar-summary-add-check-constraint-total-intake-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE daily_sugar_summary 
+            ADD CONSTRAINT chk_total_intake_mg 
+            CHECK (total_intake_mg &gt;= 0)
+        </sql>
+        <rollback>
+            ALTER TABLE daily_sugar_summary DROP CONSTRAINT chk_total_intake_mg
+        </rollback>
+    </changeSet> -->
+
+    <!-- add check constraint for daily_goal_mg -->
+    <!-- <changeSet id="daily-sugar-summary-add-check-constraint-daily-goal-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE daily_sugar_summary 
+            ADD CONSTRAINT chk_daily_goal_mg 
+            CHECK (daily_goal_mg &gt; 0)
+        </sql>
+        <rollback>
+            ALTER TABLE daily_sugar_summary DROP CONSTRAINT chk_daily_goal_mg
+        </rollback>
+    </changeSet> -->
+
+    <!-- add check constraint for progress_percentage -->
+    <!-- <changeSet id="daily-sugar-summary-add-check-constraint-progress-percentage-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE daily_sugar_summary 
+            ADD CONSTRAINT chk_progress_percentage 
+            CHECK (progress_percentage &gt;= 0)
+        </sql>
+        <rollback>
+            ALTER TABLE daily_sugar_summary DROP CONSTRAINT chk_progress_percentage
+        </rollback>
+    </changeSet> -->
+
+    <!-- add check constraint for record_count -->
+    <!-- <changeSet id="daily-sugar-summary-add-check-constraint-record-count-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="daily_sugar_summary"/>
+        </preConditions>
+        <sql>
+            ALTER TABLE daily_sugar_summary 
+            ADD CONSTRAINT chk_record_count 
+            CHECK (record_count &gt;= 0)
+        </sql>
+        <rollback>
+            ALTER TABLE daily_sugar_summary DROP CONSTRAINT chk_record_count
+        </rollback>
+    </changeSet> -->
+
+</databaseChangeLog> 

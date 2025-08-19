@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loyalty Points System</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .version-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 200px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        .example {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Loyalty Points System <span class="version-badge">V2</span></h1>
+        
+        <div class="example">
+            <strong>💡 Example User IDs:</strong> 1001, 1002, 1003, CUSTOMER001, VIP_USER_123
+        </div>
+        
+        <div class="section">
+            <h2>📊 Contract Information</h2>
+            <button onclick="getContractInfo()">Get Contract Info</button>
+            <div id="contractInfo" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🏆 Award Points (Owner Only)</h2>
+            <input type="text" id="awardUserId" placeholder="User ID (e.g., 1001)" />
+            <input type="number" id="awardAmount" placeholder="Points to Award" />
+            <button onclick="awardPoints()">Award Points</button>
+            <div id="awardResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>👀 Check Points</h2>
+            <input type="text" id="checkUserId" placeholder="User ID (e.g., 1001)" />
+            <button onclick="checkPoints()">Check Points</button>
+            <div id="checkResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🎁 Redeem Points</h2>
+            <input type="text" id="redeemUserId" placeholder="User ID (e.g., 1001)" />
+            <button onclick="redeemPoints()">Redeem Points</button>
+            <div id="redeemResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Check User Exists</h2>
+            <input type="text" id="existsUserId" placeholder="User ID (e.g., 1001)" />
+            <button onclick="checkUserExists()">Check User</button>
+            <div id="existsResult" class="result"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Health Check</h2>
+            <button onclick="healthCheck()">Check API Health</button>
+            <div id="healthResult" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8005';
+
+        async function makeRequest(endpoint, method = 'GET', body = null) {
+            try {
+                const options = {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Request failed');
+                }
+                
+                return data;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.className = `result ${isError ? 'error' : 'success'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            element.className = 'result loading';
+            element.textContent = 'Loading...';
+        }
+
+        async function getContractInfo() {
+            showLoading('contractInfo');
+            try {
+                const data = await makeRequest('/contract-info');
+                showResult('contractInfo', data);
+            } catch (error) {
+                showResult('contractInfo', { error: error.message }, true);
+            }
+        }
+
+        async function awardPoints() {
+            const userId = document.getElementById('awardUserId').value;
+            const amount = parseInt(document.getElementById('awardAmount').value);
+            
+            if (!userId || !amount) {
+                showResult('awardResult', { error: 'Please provide both user ID and amount' }, true);
+                return;
+            }
+
+            showLoading('awardResult');
+            try {
+                const data = await makeRequest('/award-points', 'POST', {
+                    user_id: userId,
+                    amount: amount
+                });
+                showResult('awardResult', data);
+            } catch (error) {
+                showResult('awardResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkPoints() {
+            const userId = document.getElementById('checkUserId').value;
+            
+            if (!userId) {
+                showResult('checkResult', { error: 'Please provide a user ID' }, true);
+                return;
+            }
+
+            showLoading('checkResult');
+            try {
+                const data = await makeRequest('/check-points', 'POST', {
+                    user_id: userId
+                });
+                showResult('checkResult', data);
+            } catch (error) {
+                showResult('checkResult', { error: error.message }, true);
+            }
+        }
+
+        async function redeemPoints() {
+            const userId = document.getElementById('redeemUserId').value;
+            
+            if (!userId) {
+                showResult('redeemResult', { error: 'Please provide a user ID' }, true);
+                return;
+            }
+
+            showLoading('redeemResult');
+            try {
+                const data = await makeRequest('/redeem-points', 'POST', {
+                    user_id: userId
+                });
+                showResult('redeemResult', data);
+            } catch (error) {
+                showResult('redeemResult', { error: error.message }, true);
+            }
+        }
+
+        async function checkUserExists() {
+            const userId = document.getElementById('existsUserId').value;
+            
+            if (!userId) {
+                showResult('existsResult', { error: 'Please provide a user ID' }, true);
+                return;
+            }
+
+            showLoading('existsResult');
+            try {
+                const data = await makeRequest('/user-exists', 'POST', {
+                    user_id: userId
+                });
+                showResult('existsResult', data);
+            } catch (error) {
+                showResult('existsResult', { error: error.message }, true);
+            }
+        }
+
+        async function healthCheck() {
+            showLoading('healthResult');
+            try {
+                const data = await makeRequest('/health');
+                showResult('healthResult', data);
+            } catch (error) {
+                showResult('healthResult', { error: error.message }, true);
+            }
+        }
+
+        // Auto-load contract info on page load
+        window.onload = function() {
+            getContractInfo();
+        };
+    </script>
+</body>
+</html> 

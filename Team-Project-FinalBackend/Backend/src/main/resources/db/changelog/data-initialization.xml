@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- ==================================================== -->
+    <!-- 数据初始化 Changelog                                   -->
+    <!-- 执行顺序（优化版）：                                      -->
+    <!-- 1. 跳过 data_import.sql（避免 LOAD DATA 冲突）          -->
+    <!-- 2. allergen_dictionary.csv（使用 Liquibase loadData）  -->
+    <!-- 3. ireland_products_final.csv（使用 Liquibase loadData）-->
+    <!-- 4. product_allergen_data.sql（生成关联关系）             -->
+    <!-- 5. test-data.sql（插入测试数据）                        -->
+    <!-- ==================================================== -->
+
+    <!-- 1. 跳过 data_import.sql - 因为包含 LOAD DATA LOCAL INFILE 会导致错误 -->
+    <!-- 我们直接使用 Liquibase 的 <loadData> 功能替代，更可靠且跨平台兼容 -->
+    <changeSet id="skip-data-import-sql" author="system" runOnChange="false">
+        <comment>跳过 data_import.sql 执行 - 使用 Liquibase 原生功能替代</comment>
+        <sql>
+            -- 这个 changeset 故意为空，只是为了记录我们跳过了 data_import.sql
+            SELECT 'data_import.sql 被跳过，使用 Liquibase loadData 功能替代' AS status;
+        </sql>
+    </changeSet>
+
+    <!-- 2. 导入 allergen_dictionary.csv -->
+    <changeSet id="load-allergen-dictionary" author="system" runOnChange="false">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="allergen"/>
+            <!-- 检查表是否为空或数据较少，避免重复导入 -->
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM allergen WHERE allergen_id > 100
+            </sqlCheck>
+        </preConditions>
+        <comment>导入过敏原字典数据</comment>
+        <loadData file="data/allergen_dictionary.csv"
+                  tableName="allergen"
+                  separator=","
+                  quotchar="&quot;"
+                  relativeToChangelogFile="false">
+            <column name="allergen_id" type="NUMERIC"/>
+            <column name="name" type="STRING"/>
+            <column name="category" type="STRING"/>
+            <column name="is_common" type="BOOLEAN"/>
+            <column name="description" type="STRING"/>
+        </loadData>
+        <rollback>
+            <delete tableName="allergen">
+                <where>allergen_id BETWEEN 1 AND 110</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <!-- 3. 导入 ireland_products_final.csv -->
+    <changeSet id="load-ireland-products-with-sustainability" author="system" runOnChange="false">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="product"/>
+            <!-- 检查产品表是否为空，避免重复导入大量数据 -->
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM product WHERE barcode LIKE '50001%'
+            </sqlCheck>
+        </preConditions>
+        <comment>导入爱尔兰产品数据 - 这可能需要几分钟时间</comment>
+        <loadData file="data/ireland_products_final_with_sustainability.csv"
+                  tableName="product"
+                  separator=","
+                  quotchar="&quot;"
+                  relativeToChangelogFile="false">
+            <column name="barcode" type="STRING"/>
+            <column name="name" type="STRING"/>
+            <column name="brand" type="STRING"/>
+            <column name="ingredients" type="STRING"/>
+            <column name="allergens" type="STRING"/>
+            <column name="energy_100g" type="NUMERIC"/>
+            <column name="energy_kcal_100g" type="NUMERIC"/>
+            <column name="fat_100g" type="NUMERIC"/>
+            <column name="saturated_fat_100g" type="NUMERIC"/>
+            <column name="carbohydrates_100g" type="NUMERIC"/>
+            <column name="sugars_100g" type="NUMERIC"/>
+            <column name="proteins_100g" type="NUMERIC"/>
+            <column name="serving_size" type="STRING"/>
+            <column name="category" type="STRING"/>
+            <column name="is_sustainable" type="BOOLEAN"/>
+        </loadData>
+        <rollback>
+            <delete tableName="product">
+                <where>barcode LIKE '50001%'</where>
+            </delete>
+        </rollback>
+    </changeSet>
+
+    <!-- 4. 执行 product_allergen_data.sql -->
+    <changeSet id="execute-product-allergen-sql" author="system" runOnChange="false">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="product_allergen"/>
+            <!-- 确保产品和过敏原数据已存在 -->
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM product
+            </sqlCheck>
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END FROM allergen
+            </sqlCheck>
+            <!-- 检查关联表是否为空 -->
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM product_allergen
+            </sqlCheck>
+        </preConditions>
+        <comment>生成产品-过敏原关联关系</comment>
+        <sqlFile path="data/product_allergen_data.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 stripComments="true"
+                 endDelimiter=";"/>
+        <rollback>
+            <delete tableName="product_allergen"/>
+        </rollback>
+    </changeSet>
+
+    <!-- 5. 执行 test-data.sql -->
+    <changeSet id="execute-test-data-sql" author="system" runOnChange="false">
+        <preConditions onFail="MARK_RAN">
+            <!-- 确保所有必要的表都存在 -->
+            <tableExists tableName="user"/>
+            <tableExists tableName="user_preference"/>
+            <tableExists tableName="user_allergen"/>
+            <tableExists tableName="product_preference"/>
+            <tableExists tableName="scan_history"/>
+            <tableExists tableName="purchase_record"/>
+            <tableExists tableName="purchase_item"/>
+            <tableExists tableName="recommendation_log"/>
+            <!-- 检查是否已有测试用户，避免重复插入 -->
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM user WHERE user_id IN (1001, 1002, 1003)
+            </sqlCheck>
+        </preConditions>
+        <comment>插入测试数据</comment>
+        <sqlFile path="data/test-data.sql"
+                 relativeToChangelogFile="false"
+                 splitStatements="true"
+                 stripComments="true"
+                 endDelimiter=";"/>
+        <rollback>
+            <comment>清理测试数据</comment>
+            <sql>
+                DELETE FROM recommendation_log WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM barcode_history WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM receipt_history WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM purchase_item WHERE purchase_id IN (SELECT purchase_id FROM purchase_record WHERE user_id IN (1001, 1002, 1003));
+                DELETE FROM purchase_record WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM scan_history WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM daily_sugar_summary WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM sugar_intake_history WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM sugar_goals WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM monthly_statistics WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM product_preference WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM user_allergen WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM user_preference WHERE user_id IN (1001, 1002, 1003);
+                DELETE FROM user WHERE user_id IN (1001, 1002, 1003);
+            </sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog> 

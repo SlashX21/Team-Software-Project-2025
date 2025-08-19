@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- create user table -->
+     <changeSet id="user-create-table-1" author="YanhaoSun">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="user"/>
+            </not>
+        </preConditions>
+        <createTable tableName="user">
+            <column name="user_id" type="${type.int}" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="username" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="password_hash" type="${type.string}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="age" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="gender" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="height_cm" type="${type.int}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="weight_kg" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="activity_level" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="nutrition_goal" type="${type.string}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="daily_calories_target" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="daily_protein_target" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="daily_carb_target" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="daily_fat_target" type="${type.float}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="date_of_birth" type="${type.date}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+
+            <column name="created_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            <column name="updated_at" type="${type.datetime}">
+                <!-- <constraints nullable="false"/> -->
+            </column>
+            
+        </createTable>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,163 @@
+version: '3.8'
+services:
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: grocery-guardian-db
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456+a
+      MYSQL_DATABASE: springboot_demo
+      MYSQL_INITDB_SKIP_TZINFO: 1
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # - ./database:/docker-entrypoint-initdb.d  # 暂时注释掉初始化脚本
+    networks:
+      - grocery-guardian-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # OCR服务 (Python FastAPI)
+  ocr-service:
+    build:
+      context: ./Ocr/src/main/java/org/ocr/python/demo
+      dockerfile: Dockerfile
+    container_name: grocery-guardian-ocr
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=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
+      - AZURE_ENDPOINT=https://groceryguardiantest.cognitiveservices.azure.com/
+      - AZURE_KEY=A75sFivHqMubAkZGxtHunPzmnIFZHW5HcYT0bXpL47tZl6SpP5v0JQQJ99BGACi5YpzXJ3w3AAAFACOGPvGI
+      - API_TOKEN=123456
+    networks:
+      - grocery-guardian-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 推荐系统服务 (Python FastAPI)
+  recommendation-service:
+    build:
+      context: ./Recommendation/src/main/java/org/recommendation/Rec_LLM_Module
+      dockerfile: Dockerfile
+    container_name: grocery-guardian-recommendation
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=java_integration
+      - DB_TYPE=mysql
+      - JAVA_DB_CONNECTION_STRING=mysql+pymysql://root:123456+a@mysql:3306/springboot_demo?charset=utf8mb4
+      # Azure OpenAI配置（主要）- Updated for o4-mini deployment
+      - AZURE_OPENAI_API_KEY=a0aad09ad49949f8960ed30cc9d39c0a
+      - AZURE_OPENAI_ENDPOINT=https://xiangopenai2025.openai.azure.com/
+      - AZURE_OPENAI_API_VERSION=2024-12-01-preview
+      - AZURE_OPENAI_MODEL=o4-mini
+      # OpenAI配置（备用）- Enabled for fallback
+      - OPENAI_API_KEY=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
+      # LLM configuration - Enabled for production
+      - ENABLE_LOCAL_FALLBACK=false
+      - LLM_DISABLED=false
+      # 其他服务配置
+      - AZURE_ENDPOINT=https://groceryguardiantest.cognitiveservices.azure.com/
+      - AZURE_KEY=A75sFivHqMubAkZGxtHunPzmnIFZHW5HcYT0bXpL47tZl6SpP5v0JQQJ99BGACi5YpzXJ3w3AAAFACOGPvGI
+      - API_PORT=8001
+      - API_HOST=0.0.0.0
+      - LOG_LEVEL=INFO
+      - JAVA_BACKEND_URL=http://backend:8080
+      # 并发控制配置
+      - MAX_CONCURRENT_REQUESTS=15
+      - MAX_QUEUE_SIZE=200
+      - REQUEST_TIMEOUT=45
+      # 缓存配置
+      - CACHE_ENABLED=true
+      - CACHE_TTL_SECONDS=3600
+      # 监控配置
+      - MONITORING_ENABLED=true
+      - METRICS_COLLECTION_INTERVAL=60
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - grocery-guardian-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Loyalty积分服务 (Python FastAPI)
+  loyalty-service:
+    build:
+      context: ./Loyalty/src/main/java/org/loyalty/module/loyalty_module
+      dockerfile: Dockerfile
+    container_name: grocery-guardian-loyalty
+    ports:
+      - "8005:8005"
+    environment:
+      # Web3配置 - 需要根据实际情况配置
+      - SEPOLIA_URL=https://sepolia.infura.io/v3/fba88744aebc4f17975c6a4a33965bb0
+      - PRIVATE_KEY=6fd6dff4a7895eca3a42ffd962397316430804af49e7d412b79b22fdddc5b2ca
+      # API配置
+      - API_HOST=0.0.0.0
+      - API_PORT=8005
+      - LOG_LEVEL=INFO
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - grocery-guardian-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 主后端服务 (Java Spring Boot)
+  backend:
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    container_name: grocery-guardian-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/springboot_demo?createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456+a
+      - OCR_SERVICE_BASE_URL=http://ocr-service:8000
+      - RECOMMENDATION_SERVICE_BASE_URL=http://recommendation-service:8001
+      - LOYALTY_SERVICE_BASE_URL=http://loyalty-service:8005
+      - OCR_SERVICE_API_TOKEN=123456
+      - RECOMMENDATION_SERVICE_API_TOKEN=123456
+      - LOYALTY_SERVICE_API_TOKEN=123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+      ocr-service:
+        condition: service_healthy
+      recommendation-service:
+        condition: service_healthy
+      loyalty-service:
+        condition: service_healthy
+    networks:
+      - grocery-guardian-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mysql_data:
+
+networks:
+  grocery-guardian-network:
+    driver: bridge
