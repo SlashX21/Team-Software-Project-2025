@@ -1,0 +1,47 @@
+name: grocery_guardian_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  image_picker: ^1.1.2
+  mobile_scanner: ^7.0.1
+  page_transition: ^2.2.1
+  shared_preferences: ^2.2.2
+  http: ^1.1.0
+  http_parser: ^4.0.2
+  intl: ^0.20.2
+  flutter_markdown: ^0.7.4
+  barcode_widget: ^2.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  
+  fonts:
+    - family: Fryo
+      fonts:
+        - asset: fonts/Fryo.ttf
+    - family: Pacifico
+      fonts:
+        - asset: fonts/Pacifico.ttf
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Regular.ttf
+        - asset: fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: fonts/Poppins-Bold.ttf
+          weight: 700
+  
+  assets:
+    - assets/images/logo_icon.png
+    - assets/data/products.json
